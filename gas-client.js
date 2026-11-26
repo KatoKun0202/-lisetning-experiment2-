@@ -1,5 +1,5 @@
 /* GAS WebアプリへJSONPで読み書きする共通処理 */
-window.GAS_WEB_APP_URL = 'PASTE_GAS_WEB_APP_URL_HERE';
+window.GAS_WEB_APP_URL = 'https://script.google.com/macros/u/1/s/AKfycbw_LpQnANLsjOcv-B26smZ8hrjatNj8HY-rykMgRhOKt0TDuJ66LFs2HhOkEmvOMiaB/exec';
 
 window.gasGet = function(action, parameters = {}) {
     return new Promise((resolve, reject) => {
