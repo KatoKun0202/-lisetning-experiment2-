@@ -1,0 +1,1132 @@
+<!-- HTMLのページであることをブラウザーに伝える -->
+<!doctype html>
+<html lang="ja">
+    <!-- このページの文章が日本語であることを示す -->
+    <head>
+        <!-- 日本語が文字化けしないよう文字コードを指定 -->
+        <meta charset="utf-8">
+        <!-- スマートフォンでも画面幅に合わせて表示 -->
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <!-- ブラウザーのタブに表示するページ名 -->
+        <title>聴取実験｜判断の基準となった箇所</title>
+        <!-- CSSでページの色、文字、配置などの見た目を設定 -->
+        <style>
+            /* 色を変えるときにまとめて調整できるよう、基本色を変数にした */
+            :root {
+                color-scheme:light;
+                --ink:#242237;
+                --muted:#69677a;
+                --line:#e3e1ed;
+                --paper:#fff;
+                --wash:#f7f6fb;
+                --violet:#6754c8;
+                --violet-dark:#4d3da6;
+                --soft:#eeeafd;
+                --orange:#e07b4f
+            }
+
+            /* 余白や枠線を含めた大きさで要素を配置 */
+            * {
+                box-sizing:border-box
+            }
+
+            body {
+                margin:0;
+                background:var(--wash);
+                color:var(--ink);
+                font-family:-apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+                line-height:1.55
+            }
+
+            /* ページ全体の幅と見出し、説明文の見た目 */
+            main {
+                width:min(900px, 100% - 32px);
+                margin:32px auto 56px
+            }
+
+            .eyebrow {
+                font-size:12px;
+                font-weight:700;
+                letter-spacing:.12em;
+                color:var(--violet);
+                margin:0 0 8px
+            }
+
+            h1 {
+                font-size:clamp(23px, 4vw, 32px);
+                line-height:1.3;
+                margin:0 0 8px;
+                letter-spacing:.01em
+            }
+
+            .intro {
+                color:var(--muted);
+                margin:0 0 24px;
+                max-width:70ch
+            }
+
+            .source {
+                background:#f0eef8;
+                border-left:3px solid var(--violet);
+                padding:12px 16px;
+                border-radius:0 8px 8px 0;
+                margin:0 0 20px;
+                font-size:14px
+            }
+
+            .source strong {
+                color:var(--ink)
+            }
+
+            /* 音源操作と選択一覧を読みやすく分けて表示 */
+            section {
+                background:var(--paper);
+                border:1px solid var(--line);
+                border-radius:14px;
+                padding:22px;
+                margin:16px 0;
+                box-shadow:0 2px 8px #27204408
+            }
+
+            h2 {
+                font-size:17px;
+                margin:0 0 14px
+            }
+
+            .stimulus {
+                display:grid;
+                grid-template-columns:minmax(0, 1fr) auto;
+                gap:14px;
+                align-items:end
+            }
+
+            .field label {
+                display:block;
+                font-size:13px;
+                font-weight:700;
+                margin-bottom:6px
+            }
+
+            .field input {
+                width:100%;
+                font:inherit
+            }
+
+            .text-input, .time-input {
+                border:1px solid #d8d5e3;
+                border-radius:8px;
+                padding:9px 11px;
+                background:white;
+                color:var(--ink)
+            }
+
+            .track-name {
+                font-size:13px;
+                color:var(--muted);
+                margin-top:8px;
+                overflow-wrap:anywhere
+            }
+
+            .playrow {
+                display:flex;
+                align-items:center;
+                gap:14px;
+                margin:20px 0 8px
+            }
+
+            .play {
+                border:0;
+                border-radius:9px;
+                padding:10px 18px;
+                background:var(--violet);
+                color:white;
+                font:inherit;
+                font-weight:700;
+                cursor:pointer;
+                min-width:100px
+            }
+
+            .play:hover {
+                background:var(--violet-dark)
+            }
+
+            .clock {
+                font-variant-numeric:tabular-nums;
+                color:var(--muted);
+                font-size:14px
+            }
+
+            .seek {
+                width:100%;
+                accent-color:var(--violet);
+                cursor:pointer
+            }
+
+            .ruler {
+                display:flex;
+                justify-content:space-between;
+                font-size:12px;
+                color:var(--muted);
+                font-variant-numeric:tabular-nums;
+                margin-top:-4px
+            }
+
+            .timeline-label {
+                display:flex;
+                justify-content:space-between;
+                gap:12px;
+                align-items:baseline;
+                margin:21px 0 7px
+            }
+
+            .timeline-label strong {
+                font-size:14px
+            }
+
+            .timeline-label span, .hint {
+                font-size:12px;
+                color:var(--muted)
+            }
+
+            /* 時間軸とその上に重ねる選択範囲、再生位置の見た目 */
+            .timeline {
+                height:42px;
+                position:relative;
+                background:linear-gradient(180deg, #f2f0f8, #e9e6f2);
+                border:1px solid #d9d5e5;
+                border-radius:8px;
+                overflow:hidden;
+                touch-action:none;
+                cursor:crosshair;
+                user-select:none
+            }
+
+            .timeline:before {
+                content:"";
+                position:absolute;
+                inset:50% 0 auto;
+                height:1px;
+                background:#cfcbdb
+            }
+
+            .range {
+                position:absolute;
+                top:0;
+                height:100%;
+                background:#8876de80;
+                border-left:2px solid var(--violet);
+                border-right:2px solid var(--violet);
+                pointer-events:auto;
+                cursor:pointer
+            }
+
+            .range-handle {
+                position:absolute;
+                top:0;
+                width:18px;
+                height:100%;
+                z-index:1;
+                pointer-events:auto;
+                cursor:ew-resize;
+                touch-action:none
+            }
+
+            .range-handle:after {
+                content:"";
+                position:absolute;
+                top:8px;
+                bottom:8px;
+                left:8px;
+                width:2px;
+                border-radius:2px;
+                background:var(--violet-dark)
+            }
+
+            .range-handle.start {
+                left:-9px
+            }
+
+            .range-handle.end {
+                right:-9px
+            }
+
+            .range-handle:hover:after {
+                width:4px;
+                left:7px;
+                background:#372b83
+            }
+
+            .draft {
+                position:absolute;
+                top:0;
+                height:100%;
+                background:#e07b4f70;
+                border-left:2px solid var(--orange);
+                border-right:2px solid var(--orange);
+                pointer-events:none
+            }
+
+            .playhead {
+                position:absolute;
+                left:0;
+                top:0;
+                bottom:0;
+                width:2px;
+                will-change:transform;
+                background:#302b4c;
+                pointer-events:none;
+                z-index:2
+            }
+
+            .playhead:before {
+                content:"";
+                position:absolute;
+                top:0;
+                left:-4px;
+                border-left:5px solid transparent;
+                border-right:5px solid transparent;
+                border-top:7px solid #302b4c
+            }
+
+            .previewhead {
+                position:absolute;
+                left:0;
+                top:0;
+                bottom:0;
+                width:3px;
+                will-change:transform;
+                background:#ed633d;
+                box-shadow:0 0 0 1px #fff9;
+                pointer-events:none;
+                z-index:4
+            }
+
+            .previewhead:before {
+                content:"";
+                position:absolute;
+                top:0;
+                left:-4px;
+                border-left:5px solid transparent;
+                border-right:5px solid transparent;
+                border-top:7px solid #ed633d
+            }
+
+            .timeline:focus-visible, .range:focus-visible, .seek:focus-visible, button:focus-visible, input:focus-visible {
+                outline:3px solid #b4aaf0;
+                outline-offset:2px
+            }
+
+            .actions {
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                gap:12px;
+                margin-top:13px
+            }
+
+            .primary, .secondary, .delete {
+                font:inherit;
+                font-weight:700;
+                border-radius:8px;
+                padding:9px 14px;
+                cursor:pointer
+            }
+
+            .primary {
+                border:1px solid var(--violet);
+                background:var(--violet);
+                color:white
+            }
+
+            .primary:hover {
+                background:var(--violet-dark)
+            }
+
+            .secondary {
+                border:1px solid var(--line);
+                background:#fff;
+                color:var(--ink)
+            }
+
+            .delete {
+                border:1px solid #ead8d1;
+                background:white;
+                color:#a6482b;
+                padding:7px 10px;
+                font-size:13px
+            }
+
+            .hint {
+                margin:9px 0 0
+            }
+
+            /* 登録済み範囲の一覧と編集ボタンの配置 */
+            .selection-list {
+                display:grid;
+                gap:10px
+            }
+
+            .selection {
+                display:grid;
+                grid-template-columns:40px minmax(0, 1fr) minmax(0, 1fr) auto;
+                gap:10px;
+                align-items:end;
+                border-top:1px solid var(--line);
+                padding-top:12px
+            }
+
+            .selection-actions {
+                display:flex;
+                gap:8px;
+                align-items:center
+            }
+
+            .clip-play {
+                border:1px solid #d8d5e3;
+                background:#fff;
+                color:var(--violet-dark);
+                border-radius:8px;
+                padding:7px 10px;
+                font:inherit;
+                font-size:13px;
+                font-weight:700;
+                white-space:nowrap;
+                cursor:pointer
+            }
+
+            .clip-play:hover {
+                background:var(--soft)
+            }
+
+            .selection:first-child {
+                border-top:0;
+                padding-top:0
+            }
+
+            .selection .number {
+                align-self:center;
+                color:var(--violet);
+                font-weight:800
+            }
+
+            .selection label {
+                display:block;
+                font-size:12px;
+                color:var(--muted);
+                margin:0 0 4px
+            }
+
+            .selection input {
+                width:100%;
+                font-variant-numeric:tabular-nums
+            }
+
+            .empty {
+                color:var(--muted);
+                font-size:14px;
+                margin:0
+            }
+
+            .footer {
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                gap:12px;
+                margin-top:18px
+            }
+
+            .count {
+                font-size:13px;
+                color:var(--muted)
+            }
+
+            .timeline-legend {
+                display:flex;
+                flex-wrap:wrap;
+                gap:14px;
+                margin-top:8px;
+                color:var(--muted);
+                font-size:11px
+            }
+
+            .timeline-legend span {
+                display:inline-flex;
+                align-items:center;
+                gap:6px
+            }
+
+            .legend-mark {
+                display:inline-block;
+                width:12px;
+                height:3px;
+                border-radius:2px;
+                background:#8876de
+            }
+
+            .legend-mark.main {
+                width:2px;
+                height:12px;
+                background:#302b4c
+            }
+
+            .legend-mark.preview {
+                width:3px;
+                height:12px;
+                background:#ed633d
+            }
+
+            /* 右クリックで表示する、範囲削除メニュー */
+            .context-menu {
+                position:fixed;
+                z-index:30;
+                min-width:180px;
+                padding:5px;
+                border:1px solid var(--line);
+                border-radius:9px;
+                background:var(--paper);
+                box-shadow:0 8px 24px #27204424;
+            }
+            .context-menu button {
+                width:100%;
+                padding:9px 12px;
+                border:0;
+                border-radius:6px;
+                background:transparent;
+                color:#a6482b;
+                text-align:left;
+                font:inherit;
+                cursor:pointer;
+            }
+            .context-menu button:hover {
+                background:#fbefeb;
+            }
+            .notice {
+                min-height:1.4em;
+                color:var(--violet-dark);
+                font-size:13px;
+                margin:8px 0 0
+            }
+
+            .small {
+                font-size:12px;
+                color:var(--muted);
+                margin:12px 0 0
+            }
+
+            /* 画面が狭いときは項目を縦に並べて操作しやすくする */
+            @media(max-width:620px) {
+                main {
+                    width:calc(100% - 22px);
+                    margin:19px auto 36px
+                }
+                section {
+                    padding:17px;
+                    border-radius:12px
+                }
+                .stimulus {
+                    grid-template-columns:1fr
+                }
+                .selection {
+                    grid-template-columns:30px 1fr 1fr;
+                    gap:8px
+                }
+                .selection-actions {
+                    grid-column:2/4;
+                    justify-content:flex-end
+                }
+                .selection .delete {
+                    justify-self:end
+                }
+                .actions, .footer {
+                    align-items:stretch;
+                    flex-direction:column
+                }
+                .playrow {
+                    gap:10px
+                }
+                .source {
+                    font-size:13px
+                }
+            }
+        </style>
+        <script src="./gas-client.js"></script>
+</head>
+    <body>
+        <!-- mainはこのページの中心となる実験操作画面 -->
+        <main>
+            <!-- 実験の題名と、参加者に読んでもらう操作説明 -->
+            <p class="eyebrow">LISTENING EXPERIMENT</p>
+            <h1>判断の基準となった箇所を選ぶ</h1>
+            <p class="intro">音源を聴き、判断の基準にした部分を時間範囲で指定してください。複数の箇所を登録できます。操作の練習として、範囲の追加・修正・削除を何度でも試せます。</p>
+            <div class="source">
+                <strong>操作：</strong>再生・シークで音源を聴き、下の時間軸をドラッグして範囲を追加します。各範囲の開始・終了時刻は後から編集できます。
+            </div>
+            <!-- 実験前の操作練習にも使えるよう、音源の再生と時間範囲の指定を同じ画面にまとめた -->
+            <!-- 音源の再生、一時停止、再生位置の移動をまとめた部分 -->
+            <section aria-labelledby="stimulus-heading">
+                <h2 id="stimulus-heading">刺激音源</h2>
+                <div class="stimulus">
+                    <div class="field">
+                        <label for="stimulusId">刺激ID（CSVに出力）</label>
+                        <input id="stimulusId" class="text-input" value="Inst_Choose Your Fighter">
+                    </div>
+                    <div class="clock" id="durationBadge">音源を読み込み中…</div>
+                </div>
+                <div class="track-name">Inst_Choose Your Fighter.wav</div>
+                <!-- 音源ファイルを読み込む。srcはこのHTMLから見た音源の場所 -->
+                <audio id="audio" preload="metadata" src="./audio/Inst_Choose%20Your%20Fighter.wav"></audio>
+                <!-- 再生ボタンと現在時刻、音源の長さを表示 -->
+                <div class="playrow">
+                    <button class="play" id="playBtn" type="button" disabled>再生</button><span class="clock"><span id="currentTime">00:00.0</span> / <span id="duration">--:--.-</span></span>
+                </div>
+                <!-- バーを動かして音源の再生位置を移動 -->
+                <input id="seek" class="seek" type="range" min="0" max="1000" value="0" aria-label="再生位置" disabled>
+                <div class="ruler">
+                    <span>00:00.0</span><span id="endRuler">--:--.-</span>
+                </div>
+                <!-- 時間軸はドラッグで範囲を作成し、左右の端で長さを調整 -->
+                <div class="timeline-label">
+                    <strong>判断の基準にした時間範囲</strong><span>ドラッグで追加・端で調整・右クリックで削除</span>
+                </div>
+                <!-- 紫は選択範囲、黒は通常の再生位置、橙は範囲再生位置を示す -->
+                <div class="timeline" id="timeline" tabindex="0" role="slider" aria-label="ドラッグして判断の基準となった時間範囲を追加" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">
+                    <div id="bands"></div>
+                    <div class="draft" id="draft" hidden></div>
+                    <div class="playhead" id="playhead"></div>
+                    <div class="previewhead" id="previewhead" hidden aria-hidden="true"></div>
+                </div>
+                <!-- 色と線の意味を説明する凡例 -->
+                <div class="timeline-legend" aria-label="時間軸の凡例">
+                    <span><i class="legend-mark"></i>選択範囲</span><span><i class="legend-mark main"></i>通常の再生位置</span><span><i class="legend-mark preview"></i>範囲再生位置</span>
+                </div>
+                <div class="actions">
+                    <span class="hint">色付き範囲をクリックすると、その箇所だけを再生します。メインの再生位置は動きません。</span><button class="primary" id="addBtn" type="button" disabled>直前の1秒を追加</button>
+                </div>
+                <p class="notice" id="notice" role="status" aria-live="polite"></p>
+            </section>
+            <!-- 選択した範囲の時刻編集、個別再生、削除、CSV保存 -->
+            <section aria-labelledby="selection-heading">
+                <h2 id="selection-heading">選択した箇所</h2>
+                <!-- JavaScriptが選択範囲ごとの編集欄をここに作成 -->
+                <div class="selection-list" id="selectionList">
+                    <p class="empty">まだ範囲がありません。時間軸をドラッグして追加してください。</p>
+                </div>
+                <!-- 選択件数とCSV書き出しボタン -->
+                <div class="footer">
+                    <span class="count" id="count">0件</span><span id="experimentTimer" hidden>残り 02:00</span><button class="secondary" id="exportBtn" type="button" disabled>CSVを書き出す</button><button class="primary" id="nextExperimentButton" type="button" hidden>次へ進む</button>
+                </div>
+                <p class="small">CSVには刺激ID、開始時刻、終了時刻を秒単位で記録します。編集内容はこのブラウザー内に保持されます。</p>
+            </section>
+        </main>
+        <!-- 選択範囲を右クリックしたときに表示する操作メニュー -->
+        <div class="context-menu" id="rangeContextMenu" role="menu" hidden>
+            <button type="button" role="menuitem" id="deleteContextRange">選択範囲を削除</button>
+        </div>
+        <!-- JavaScriptで再生操作、時間範囲の選択、CSV出力を動かす -->
+        <script>
+            (() => {
+                // HTML内の音源、再生ボタン、再生位置バーをJavaScriptから使えるように取得
+                const audio=document.querySelector('#audio'), playBtn=document.querySelector('#playBtn'), seek=document.querySelector('#seek');
+                // 選択範囲を試聴する音源を別に用意し、通常の再生位置を変えないようにした
+                const previewAudio=new Audio(audio.src);
+                previewAudio.preload='auto';
+                const currentTime=document.querySelector('#currentTime'), duration=document.querySelector('#duration'), durationBadge=document.querySelector('#durationBadge'), endRuler=document.querySelector('#endRuler');
+                const timeline=document.querySelector('#timeline'), bands=document.querySelector('#bands'), draft=document.querySelector('#draft'), playhead=document.querySelector('#playhead'), previewhead=document.querySelector('#previewhead');
+                const list=document.querySelector('#selectionList'), count=document.querySelector('#count'), exportBtn=document.querySelector('#exportBtn'), addBtn=document.querySelector('#addBtn'), notice=document.querySelector('#notice'), contextMenu=document.querySelector('#rangeContextMenu'), deleteContextRange=document.querySelector('#deleteContextRange'), idInput=document.querySelector('#stimulusId');
+                // clipsは保存する範囲、dragはドラッグ中の状態、activeClipは試聴中の範囲を記録
+                let clips=[], drag=null, dragged=false, activeClip=null, mainFrame=0, previewFrame=0;
+                const experimentParams=new URLSearchParams(location.search);
+                const inExperiment=experimentParams.get('mode')==='experiment';
+                const experimentTimer=document.querySelector('#experimentTimer');
+                const nextExperimentButton=document.querySelector('#nextExperimentButton');
+                let experimentState=null, remainingSeconds=120, experimentInterval=0;
+                if(inExperiment){
+                    try{experimentState=JSON.parse(sessionStorage.getItem('listeningExperiment.state')||'null')}catch(error){}
+                    const stimulusId=experimentState?.stimuli?.[experimentState.currentIndex]||'Inst_Choose Your Fighter';
+                    document.querySelector('#stimulusId').value=stimulusId;
+                    document.querySelector('.track-name').textContent=stimulusId;
+                    audio.src=experimentState?.audioByStimulus?.[stimulusId]||`./audio/${encodeURIComponent(stimulusId+'.wav')}`;
+                    previewAudio.src=audio.src;
+                    audio.load();
+                    previewAudio.load();
+                    document.querySelector('#exportBtn').hidden=true;
+                    document.querySelector('#experimentTimer').hidden=false;
+                    document.querySelector('#nextExperimentButton').hidden=false;
+                    document.querySelector('#nextExperimentButton').textContent='選択を終えて次へ進む';
+                    document.querySelector('.small').textContent='選択した範囲はこのブラウザー内に一時保存されます。';
+                    const updateTimer=()=>{
+                        const m=Math.floor(remainingSeconds/60),s=remainingSeconds%60;
+                        experimentTimer.textContent=`残り ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+                    };
+                    updateTimer();
+                    experimentInterval=window.setInterval(()=>{
+                        remainingSeconds--;
+                        updateTimer();
+                        if(remainingSeconds<=0)finishExperimentRange()
+                    },1000)
+                }
+                // 秒数を分:秒の形に直して画面に表示
+                const fmt=t=> {
+                    if(!Number.isFinite(t))return '--:--.-';
+                    const m=Math.floor(t/60), s=(t%60).toFixed(1);
+                    return `${String(m).padStart(2,'0')}:${String(s).padStart(4,'0')}`
+                };
+                // 音源の長さを取得し、まだ読み込み中の場合は0秒として扱う
+                const durationValue=()=>Number.isFinite(audio.duration)?audio.duration:0;
+                // 既存の範囲と重なる時間帯は選択できないようにした
+                const overlaps=(start, end, skipIndex=-1)=>clips.some((c, i)=>i!==skipIndex&&start<c.end&&end>c.start);
+                // 右クリックした範囲を削除できるよう、メニューをその位置に表示
+                let contextClip=null;
+                function closeRangeMenu() {
+                    contextMenu.hidden=true;
+                    contextClip=null
+                }
+                function showRangeMenu(clip, x, y) {
+                    contextClip=clip;
+                    contextMenu.hidden=false;
+                    const left=Math.min(x, window.innerWidth-contextMenu.offsetWidth-8);
+                    const top=Math.min(y, window.innerHeight-contextMenu.offsetHeight-8);
+                    contextMenu.style.left=`${Math.max(8,left)}px`;
+                    contextMenu.style.top=`${Math.max(8,top)}px`
+                }
+                function removeClip(clip) {
+                    const index=clips.indexOf(clip);
+                    if(index<0)return;
+                    if(activeClip===clip)stopPreview();
+                    clips.splice(index, 1);
+                    closeRangeMenu();
+                    notice.textContent='範囲を削除しました。';
+                    render()
+                }
+                contextMenu.addEventListener('pointerdown', e=>e.stopPropagation());
+                deleteContextRange.addEventListener('click', ()=>removeClip(contextClip));
+                document.addEventListener('pointerdown', e=> {
+                    if(!contextMenu.hidden&&!contextMenu.contains(e.target))closeRangeMenu()
+                });
+                document.addEventListener('keydown', e=> {
+                    if(e.key==='Escape')closeRangeMenu()
+                });
+                // 音源の再生時刻を文字と黒い位置バーに反映し、再生中は滑らかに追従させる
+                function updateMainMarker() {
+                    const d=durationValue(), t=audio.currentTime||0;
+                    currentTime.textContent=fmt(t);
+                    seek.value=d?String(Math.round((t/d)*1000)):0;
+                    playhead.style.transform=`translateX(${Math.max(0,timeline.clientWidth*(d?Math.min(1,t/d):0)-1)}px)`;
+                    timeline.setAttribute('aria-valuemax', String(d));
+                    timeline.setAttribute('aria-valuenow', String(t))
+                }
+                // 範囲試聴の時刻をオレンジ色の位置バーに反映
+                function updatePreviewMarker() {
+                    const d=durationValue();
+                    if(activeClip&&!previewAudio.paused&&d) {
+                        previewhead.style.transform=`translateX(${Math.max(0,timeline.clientWidth*Math.min(1,previewAudio.currentTime/d)-1)}px)`;
+                        previewhead.hidden=false
+                    } else  previewhead.hidden=true
+                }
+                // 再生時計を毎フレーム確認し、再生位置バーを滑らかに動かす
+                function animateMainMarker() {
+                    if(mainFrame)return;
+                    const tick=()=> {
+                        updateMainMarker();
+                        if(!audio.paused)mainFrame=requestAnimationFrame(tick);
+                        else mainFrame=0
+                    };
+                    mainFrame=requestAnimationFrame(tick)
+                }
+                function stopMainMarkerAnimation() {
+                    if(mainFrame)cancelAnimationFrame(mainFrame);
+                    mainFrame=0;
+                    updateMainMarker()
+                }
+                // 範囲再生の位置も毎フレーム確認し、範囲の終端で停止する
+                function animatePreviewMarker() {
+                    if(previewFrame)return;
+                    const tick=()=> {
+                        if(activeClip&&!previewAudio.paused) {
+                            if(previewAudio.currentTime<activeClip.start)previewAudio.currentTime=activeClip.start;
+                            if(previewAudio.currentTime>=activeClip.end) {
+                                previewAudio.pause();
+                                previewAudio.currentTime=activeClip.end;
+                                activeClip=null;
+                                previewFrame=0;
+                                updatePreviewMarker();
+                                render();
+                                return
+                            }
+                            updatePreviewMarker();
+                            previewFrame=requestAnimationFrame(tick)
+                        } else {
+                            previewFrame=0;
+                            updatePreviewMarker()
+                        }
+                    };
+                    previewFrame=requestAnimationFrame(tick)
+                }
+                function stopPreview() {
+                    previewAudio.pause();
+                    if(previewFrame)cancelAnimationFrame(previewFrame);
+                    previewFrame=0;
+                    activeClip=null;
+                    updatePreviewMarker()
+                }
+                // 範囲再生は別の音声要素で行い、通常の再生位置をそのまま保つ
+                function playPreview(c) {
+                    audio.pause();
+                    stopPreview();
+                    activeClip=c;
+                    previewAudio.currentTime=c.start;
+                    updatePreviewMarker();
+                    previewAudio.play();
+                    render()
+                }
+                // 選択範囲の色帯と一覧を作り直し、画面の表示を最新状態にする
+                function render() {
+                    const d=durationValue();
+                    duration.textContent=fmt(d);
+                    durationBadge.textContent=d?`長さ ${fmt(d)}`:'音源を読み込み中…';
+                    endRuler.textContent=fmt(d);
+                    updateMainMarker();
+                    updatePreviewMarker();
+                    // 選択した範囲を時間軸に表示し、端のつまみで開始・終了を調整できるようにした
+                    bands.innerHTML='';
+                    clips.forEach((c, i)=> {
+                        const span=document.createElement('span');
+                        span.className='range';
+                        span.style.left=`${c.start/d*100}%`;
+                        span.style.width=`${Math.max(.3,(c.end-c.start)/d*100)}%`;
+                        span.title=`${i+1}: ${fmt(c.start)}–${fmt(c.end)}（クリックで再生）`;
+                        span.setAttribute('role', 'group');
+                        span.tabIndex=0;
+                        span.setAttribute('aria-label', `${i+1}件目 ${fmt(c.start)}から${fmt(c.end)}。クリックまたはEnterで再生`);
+                        span.addEventListener('pointerdown', e=> {
+                            if(!e.target.closest('.range-handle'))e.stopPropagation()
+                        });
+                        span.addEventListener('contextmenu', e=> {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showRangeMenu(c, e.clientX, e.clientY)
+                        });
+                        span.addEventListener('click', e=> {
+                            if(e.target.closest('.range-handle'))return;
+                            if(activeClip===c&&!previewAudio.paused) {
+                                stopPreview();
+                                notice.textContent='範囲の再生を停止しました。';
+                                render()
+                            } else  playPreview(c)
+                        });
+                        span.addEventListener('keydown', e=> {
+                            if(['Enter', ' '].includes(e.key)) {
+                                e.preventDefault();
+                                playPreview(c)
+                            }
+                        });
+                        for(const edge of ['start', 'end']) {
+                            const handle=document.createElement('span');
+                            handle.className=`range-handle ${edge}`;
+                            handle.setAttribute('role', 'slider');
+                            handle.tabIndex=0;
+                            handle.dataset.edge=edge;
+                            handle.setAttribute('aria-label', `${i+1}件目の${edge==='start'?'開始':'終了'}時刻を調整`);
+                            handle.setAttribute('aria-valuenow', String(c[edge]));
+                            handle.addEventListener('pointerdown', e=> {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                timeline.setPointerCapture(e.pointerId);
+                                drag= {
+                                    type:'resize', index:i, edge, value:c[edge], startValue:c[edge], pointerStart:at(e), element:span
+                                };
+                                notice.textContent='つまみをドラッグして時刻を調整します。'
+                            });
+                            handle.addEventListener('keydown', e=> {
+                                if(!['ArrowLeft', 'ArrowRight'].includes(e.key))return;
+                                e.preventDefault();
+                                const step=e.shiftKey?1:.1;
+                                let low, high;
+                                if(edge==='start') {
+                                    low=i?clips[i-1].end:0;
+                                    high=c.end-.1
+                                } else {
+                                    low=c.start+.1;
+                                    high=i<clips.length-1?clips[i+1].start:d
+                                }
+                                c[edge]=Math.max(low, Math.min(high, c[edge]+(e.key==='ArrowRight'?step:-step)));
+                                clips.sort((a, b)=>a.start-b.start);
+                                render();
+                                timeline.querySelectorAll('.range-handle').forEach(h=> {
+                                    if(h.getAttribute('aria-label')===`${clips.indexOf(c)+1}件目の${edge==='start'?'開始':'終了'}時刻を調整`)h.focus()
+                                });
+                                notice.textContent='範囲を調整しました。'
+                            });
+                            span.append(handle)
+                        }
+                        bands.append(span)
+                    });
+                    list.innerHTML='';
+                    if(!clips.length) {
+                        const p=document.createElement('p');
+                        p.className='empty';
+                        p.textContent='まだ範囲がありません。時間軸をドラッグして追加してください。';
+                        list.append(p)
+                    }
+                    clips.forEach((c, i)=> {
+                        const row=document.createElement('div');
+                        row.className='selection';
+                        row.addEventListener('contextmenu', e=> {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showRangeMenu(c, e.clientX, e.clientY)
+                        });
+                        row.innerHTML=`
+                    <div class="number">${i+1}</div>
+                    <div>
+                        <label>開始</label>
+                        <input class="time-input" type="number" min="0" max="${d}" step="0.1" value="${c.start.toFixed(1)}" aria-label="${i+1}件目の開始時刻（秒）">
+                    </div>
+                    <div>
+                        <label>終了</label>
+                        <input class="time-input" type="number" min="0" max="${d}" step="0.1" value="${c.end.toFixed(1)}" aria-label="${i+1}件目の終了時刻（秒）">
+                    </div>
+                    <div class="selection-actions">
+                        <button class="clip-play" type="button">この範囲を再生</button>
+                        <button class="delete" type="button" aria-label="${i+1}件目を削除">削除</button>
+                    </div>`;
+                        const inputs=row.querySelectorAll('input');
+                        inputs.forEach((input, k)=>input.addEventListener('change', ()=> {
+                            let v=Number(input.value);
+                            if(!Number.isFinite(v))v=k?c.end:c.start;
+                            v=Math.max(0, Math.min(d, v));
+                            let start=c.start, end=c.end;
+                            if(k===0)start=Math.min(v, end-.1);
+                            else end=Math.max(v, start+.1);
+                            if(start<0)start=0;
+                            if(end>d)end=d;
+                            if(overlaps(start, end, i)) {
+                                notice.textContent='ほかの範囲と重なるため変更できません。時刻を調整してください。';
+                                render();
+                                return
+                            }
+                            c.start=start;
+                            c.end=end;
+                            clips.sort((a, b)=>a.start-b.start);
+                            notice.textContent='範囲を更新しました。';
+                            render()
+                        }));
+                        const clipPlay=row.querySelector('.clip-play');
+                        clipPlay.textContent=activeClip===c&&!previewAudio.paused?'再生中（停止）':'この範囲を再生';
+                        clipPlay.addEventListener('click', ()=> {
+                            if(activeClip===c&&!previewAudio.paused) {
+                                stopPreview();
+                                notice.textContent='範囲の再生を停止しました。';
+                                render();
+                                return
+                            }
+                            playPreview(c);
+                            notice.textContent=`${i+1}件目の範囲を再生しています。`;
+                            render()
+                        });
+                        row.querySelector('.delete').addEventListener('click', ()=>removeClip(c));
+                        list.append(row)
+                    });
+                    count.textContent=`${clips.length}件`;
+                    exportBtn.disabled=clips.length===0;
+                    addBtn.disabled=!d;
+                }
+                // 音源の長さが分かってから再生操作を有効にする
+                audio.addEventListener('loadedmetadata', ()=> {
+                    playBtn.disabled=false;
+                    seek.disabled=false;
+                    render()
+                });
+                audio.addEventListener('durationchange', render);
+                audio.addEventListener('timeupdate', updateMainMarker);
+                previewAudio.addEventListener('play', animatePreviewMarker);
+                previewAudio.addEventListener('pause', ()=> {
+                    if(previewFrame)cancelAnimationFrame(previewFrame);
+                    previewFrame=0;
+                    updatePreviewMarker()
+                });
+                previewAudio.addEventListener('timeupdate', ()=> {
+                    if(activeClip&&previewAudio.currentTime<activeClip.start)previewAudio.currentTime=activeClip.start;
+                    if(activeClip&&previewAudio.currentTime>=activeClip.end) {
+                        previewAudio.pause();
+                        previewAudio.currentTime=activeClip.end;
+                        activeClip=null;
+                        updatePreviewMarker();
+                        render()
+                    } else  updatePreviewMarker()
+                });
+                audio.addEventListener('play', ()=> {
+                    playBtn.textContent='一時停止';
+                    animateMainMarker()
+                });
+                audio.addEventListener('pause', ()=> {
+                    playBtn.textContent='再生';
+                    stopMainMarkerAnimation()
+                });
+                audio.addEventListener('ended', ()=>playBtn.textContent='再生');
+                audio.addEventListener('error', ()=> {
+                    durationBadge.textContent='音源を読み込めません';
+                    notice.textContent='音源ファイルを開けません。アプリのフォルダー構成を確認してください。'
+                });
+                playBtn.addEventListener('click', ()=> {
+                    stopPreview();
+                    audio.paused?audio.play():audio.pause()
+                });
+                seek.addEventListener('input', ()=> {
+                    stopPreview();
+                    if(durationValue())audio.currentTime=Number(seek.value)/1000*durationValue();
+                    updateMainMarker()
+                });
+                // 時間軸上のマウス位置を音源の秒数に変換
+                const at=e=> {
+                    const r=timeline.getBoundingClientRect();
+                    return Math.max(0, Math.min(durationValue(), (e.clientX-r.left)/r.width*durationValue()))
+                };
+                // 時間軸上で押し始めた位置を記録し、範囲選択を開始
+                timeline.addEventListener('pointerdown', e=> {
+                    if(!durationValue()||e.target.closest('.range-handle'))return;
+                    timeline.setPointerCapture(e.pointerId);
+                    drag= {
+                        type:'new', x:e.clientX, start:at(e), end:at(e)
+                    };
+                    dragged=false;
+                    draft.hidden=false;
+                    draft.style.left=`${drag.start/durationValue()*100}%`;
+                    draft.style.width='0%'
+                });
+                // つまみを動かした時点で範囲の境界を更新し、再生中の範囲にも反映する
+                timeline.addEventListener('pointermove', e=> {
+                    if(!drag)return;
+                    const d=durationValue();
+                    if(drag.type==='resize') {
+                        const c=clips[drag.index];
+                        if(!c)return;
+                        let low, high;
+                        if(drag.edge==='start') {
+                            low=drag.index?clips[drag.index-1].end:0;
+                            high=c.end-.1
+                        } else {
+                            low=c.start+.1;
+                            high=drag.index<clips.length-1?clips[drag.index+1].start:d
+                        }
+                        drag.value=Math.max(low, Math.min(high, drag.startValue+(at(e)-drag.pointerStart)));
+                        c[drag.edge]=drag.value;
+                        const start=drag.edge==='start'?drag.value:c.start, end=drag.edge==='end'?drag.value:c.end;
+                        drag.element.style.left=`${start/d*100}%`;
+                        drag.element.style.width=`${Math.max(.3,(end-start)/d*100)}%`;
+                        return
+                    }
+                    drag.end=at(e);
+                    if(Math.abs(e.clientX-drag.x)>5)dragged=true;
+                    const lo=Math.min(drag.start, drag.end), hi=Math.max(drag.start, drag.end);
+                    draft.style.left=`${lo/d*100}%`;
+                    draft.style.width=`${(hi-lo)/d*100}%`
+                });
+                // ドラッグを終えたとき、選択範囲を登録するか再生位置を移動
+                timeline.addEventListener('pointerup', e=> {
+                    if(!drag)return;
+                    if(drag.type==='resize') {
+                        const c=clips[drag.index];
+                        if(c) {
+                            c[drag.edge]=drag.value;
+                            clips.sort((a, b)=>a.start-b.start)
+                        }
+                        drag=null;
+                        render();
+                        notice.textContent='範囲を調整しました。';
+                        return
+                    }
+                    const a=drag.start, b=drag.end;
+                    draft.hidden=true;
+                    drag=null;
+                    if(dragged&&Math.abs(a-b)>=.1) {
+                        const start=Math.min(a, b), end=Math.max(a, b);
+                        stopPreview();
+                        audio.pause();
+                        if(overlaps(start, end)) {
+                            notice.textContent='ほかの範囲と重なるため追加できません。重ならない位置を選んでください。';
+                            render();
+                            return
+                        }
+                        clips.push( {
+                            start, end
+                        });
+                        clips.sort((x, y)=>x.start-y.start);
+                        notice.textContent='範囲を追加しました。再生を一時停止しました。';
+                        render()
+                    } else {
+                        stopPreview();
+                        audio.currentTime=a;
+                        updateMainMarker();
+                        notice.textContent='再生位置を移動しました。範囲を選ぶにはドラッグしてください。'
+                    }
+                });
+                timeline.addEventListener('pointercancel', ()=> {
+                    const wasResize=drag?.type==='resize';
+                    drag=null;
+                    draft.hidden=true;
+                    if(wasResize)render()
+                });
+                // 再生位置までに聴いた直前の最大1秒を登録し、追加後は音源を止める
+                addBtn.addEventListener('click', ()=> {
+                    if(!durationValue())return;
+                    stopPreview();
+                    audio.pause();
+                    const end=audio.currentTime||0;
+                    const start=Math.max(0, end-1);
+                    if(end-start<.1) {
+                        notice.textContent='直前の音を選ぶため、少し再生してから追加してください。';
+                        return
+                    }
+                    if(overlaps(start, end)) {
+                        notice.textContent='ほかの範囲と重なるため追加できません。再生位置を移動してください。';
+                        return
+                    }
+                    clips.push( {
+                        start, end
+                    });
+                    clips.sort((a, b)=>a.start-b.start);
+                    notice.textContent='直前に聴いた範囲を追加しました。再生を一時停止しました。';
+                    render()
+                });
+                // 刺激IDと各範囲の開始・終了時刻をCSVファイルに書き出す
+                exportBtn.addEventListener('click', ()=> {
+                    const esc=s=>'"'+String(s).replaceAll('"', '""')+'"';
+                    const rows=[['stimulus_id', 'start_seconds', 'end_seconds'], ...clips.map(c=>[idInput.value, c.start.toFixed(3), c.end.toFixed(3)])];
+                    const csv='\ufeff'+rows.map(r=>r.map(esc).join(',')).join('\r\n');
+                    const blob=new Blob([csv], {
+                        type:'text/csv;charset=utf-8'
+                    });
+                    const a=document.createElement('a');
+                    a.href=URL.createObjectURL(blob);
+                    a.download=`${(idInput.value||'stimulus').replace(/[\\/:*?"<>|]/g,'_')}_ranges.csv`;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    notice.textContent='CSVを書き出しました。'
+                });
+                function finishExperimentRange(){
+                    if(!inExperiment)return;
+                    window.clearInterval(experimentInterval);
+                    audio.pause();
+                    previewAudio.pause();
+                    if(experimentState){
+                        const current=experimentState.responses[experimentState.currentIndex]||{};
+                        experimentState.responses[experimentState.currentIndex]={...current,stimulusId:idInput.value,ranges:clips.map(c=>({start:Number(c.start.toFixed(3)),end:Number(c.end.toFixed(3))}))};
+                        try{sessionStorage.setItem('listeningExperiment.state',JSON.stringify(experimentState))}catch(error){}
+                    }
+                    location.href='./response.html?mode=experiment'
+                }
+                if(inExperiment){
+                    nextExperimentButton.addEventListener('click',finishExperimentRange);
+                    notice.textContent='2分以内に「人間らしくない」と感じた範囲を選択してください。終わったら次へ進めます。'
+                }
+                // 画面幅が変わったとき、位置バーを新しい時間軸幅に合わせる
+                window.addEventListener('resize', ()=> {
+                    updateMainMarker();
+                    updatePreviewMarker()
+                });
+                render();
+            })();
+        </script>
+    </body>
+</html>

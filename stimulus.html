@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>聴取実験｜刺激提示と評価</title>
+    <style>
+            /* 色を変えるときにまとめて調整できるよう、基本色を変数にした */
+            :root {
+                color-scheme:light;
+                --ink:#242237;
+                --muted:#69677a;
+                --line:#e3e1ed;
+                --paper:#fff;
+                --wash:#f7f6fb;
+                --violet:#6754c8;
+                --violet-dark:#4d3da6;
+                --soft:#eeeafd;
+                --orange:#e07b4f
+            }
+
+            /* 余白や枠線を含めた大きさで要素を配置 */
+            * {
+                box-sizing:border-box
+            }
+
+            body {
+                margin:0;
+                background:var(--wash);
+                color:var(--ink);
+                font-family:-apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+                line-height:1.55
+            }
+
+            /* ページ全体の幅と見出し、説明文の見た目 */
+            main {
+                width:min(900px, 100% - 32px);
+                margin:32px auto 56px
+            }
+
+            .eyebrow {
+                font-size:12px;
+                font-weight:700;
+                letter-spacing:.12em;
+                color:var(--violet);
+                margin:0 0 8px
+            }
+
+            h1 {
+                font-size:clamp(23px, 4vw, 32px);
+                line-height:1.3;
+                margin:0 0 8px;
+                letter-spacing:.01em
+            }
+
+            .intro {
+                color:var(--muted);
+                margin:0 0 24px;
+                max-width:70ch
+            }
+
+            .source {
+                background:#f0eef8;
+                border-left:3px solid var(--violet);
+                padding:12px 16px;
+                border-radius:0 8px 8px 0;
+                margin:0 0 20px;
+                font-size:14px
+            }
+
+            .source strong {
+                color:var(--ink)
+            }
+
+            /* 音源操作と選択一覧を読みやすく分けて表示 */
+            section {
+                background:var(--paper);
+                border:1px solid var(--line);
+                border-radius:14px;
+                padding:22px;
+                margin:16px 0;
+                box-shadow:0 2px 8px #27204408
+            }
+
+            h2 {
+                font-size:17px;
+                margin:0 0 14px
+            }
+
+            .stimulus {
+                display:grid;
+                grid-template-columns:minmax(0, 1fr) auto;
+                gap:14px;
+                align-items:end
+            }
+
+            .field label {
+                display:block;
+                font-size:13px;
+                font-weight:700;
+                margin-bottom:6px
+            }
+
+            .field input {
+                width:100%;
+                font:inherit
+            }
+
+            .text-input, .time-input {
+                border:1px solid #d8d5e3;
+                border-radius:8px;
+                padding:9px 11px;
+                background:white;
+                color:var(--ink)
+            }
+
+            .track-name {
+                font-size:13px;
+                color:var(--muted);
+                margin-top:8px;
+                overflow-wrap:anywhere
+            }
+
+            .playrow {
+                display:flex;
+                align-items:center;
+                gap:14px;
+                margin:20px 0 8px
+            }
+
+            .play {
+                border:0;
+                border-radius:9px;
+                padding:10px 18px;
+                background:var(--violet);
+                color:white;
+                font:inherit;
+                font-weight:700;
+                cursor:pointer;
+                min-width:100px
+            }
+
+            .play:hover {
+                background:var(--violet-dark)
+            }
+
+            .clock {
+                font-variant-numeric:tabular-nums;
+                color:var(--muted);
+                font-size:14px
+            }
+
+            .seek {
+                width:100%;
+                accent-color:var(--violet);
+                cursor:pointer
+            }
+
+            .ruler {
+                display:flex;
+                justify-content:space-between;
+                font-size:12px;
+                color:var(--muted);
+                font-variant-numeric:tabular-nums;
+                margin-top:-4px
+            }
+
+            .timeline-label {
+                display:flex;
+                justify-content:space-between;
+                gap:12px;
+                align-items:baseline;
+                margin:21px 0 7px
+            }
+
+            .timeline-label strong {
+                font-size:14px
+            }
+
+            .timeline-label span, .hint {
+                font-size:12px;
+                color:var(--muted)
+            }
+
+            /* 時間軸とその上に重ねる選択範囲、再生位置の見た目 */
+            .timeline {
+                height:42px;
+                position:relative;
+                background:linear-gradient(180deg, #f2f0f8, #e9e6f2);
+                border:1px solid #d9d5e5;
+                border-radius:8px;
+                overflow:hidden;
+                touch-action:none;
+                cursor:crosshair;
+                user-select:none
+            }
+
+            .timeline:before {
+                content:"";
+                position:absolute;
+                inset:50% 0 auto;
+                height:1px;
+                background:#cfcbdb
+            }
+
+            .range {
+                position:absolute;
+                top:0;
+                height:100%;
+                background:#8876de80;
+                border-left:2px solid var(--violet);
+                border-right:2px solid var(--violet);
+                pointer-events:auto;
+                cursor:pointer
+            }
+
+            .range-handle {
+                position:absolute;
+                top:0;
+                width:18px;
+                height:100%;
+                z-index:1;
+                pointer-events:auto;
+                cursor:ew-resize;
+                touch-action:none
+            }
+
+            .range-handle:after {
+                content:"";
+                position:absolute;
+                top:8px;
+                bottom:8px;
+                left:8px;
+                width:2px;
+                border-radius:2px;
+                background:var(--violet-dark)
+            }
+
+            .range-handle.start {
+                left:-9px
+            }
+
+            .range-handle.end {
+                right:-9px
+            }
+
+            .range-handle:hover:after {
+                width:4px;
+                left:7px;
+                background:#372b83
+            }
+
+            .draft {
+                position:absolute;
+                top:0;
+                height:100%;
+                background:#e07b4f70;
+                border-left:2px solid var(--orange);
+                border-right:2px solid var(--orange);
+                pointer-events:none
+            }
+
+            .playhead {
+                position:absolute;
+                left:0;
+                top:0;
+                bottom:0;
+                width:2px;
+                will-change:transform;
+                background:#302b4c;
+                pointer-events:none;
+                z-index:2
+            }
+
+            .playhead:before {
+                content:"";
+                position:absolute;
+                top:0;
+                left:-4px;
+                border-left:5px solid transparent;
+                border-right:5px solid transparent;
+                border-top:7px solid #302b4c
+            }
+
+            .previewhead {
+                position:absolute;
+                left:0;
+                top:0;
+                bottom:0;
+                width:3px;
+                will-change:transform;
+                background:#ed633d;
+                box-shadow:0 0 0 1px #fff9;
+                pointer-events:none;
+                z-index:4
+            }
+
+            .previewhead:before {
+                content:"";
+                position:absolute;
+                top:0;
+                left:-4px;
+                border-left:5px solid transparent;
+                border-right:5px solid transparent;
+                border-top:7px solid #ed633d
+            }
+
+            .timeline:focus-visible, .range:focus-visible, .seek:focus-visible, button:focus-visible, input:focus-visible {
+                outline:3px solid #b4aaf0;
+                outline-offset:2px
+            }
+
+            .actions {
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                gap:12px;
+                margin-top:13px
+            }
+
+            .primary, .secondary, .delete {
+                font:inherit;
+                font-weight:700;
+                border-radius:8px;
+                padding:9px 14px;
+                cursor:pointer
+            }
+
+            .primary {
+                border:1px solid var(--violet);
+                background:var(--violet);
+                color:white
+            }
+
+            .primary:hover {
+                background:var(--violet-dark)
+            }
+
+            .secondary {
+                border:1px solid var(--line);
+                background:#fff;
+                color:var(--ink)
+            }
+
+            .delete {
+                border:1px solid #ead8d1;
+                background:white;
+                color:#a6482b;
+                padding:7px 10px;
+                font-size:13px
+            }
+
+            .hint {
+                margin:9px 0 0
+            }
+
+            /* 登録済み範囲の一覧と編集ボタンの配置 */
+            .selection-list {
+                display:grid;
+                gap:10px
+            }
+
+            .selection {
+                display:grid;
+                grid-template-columns:40px minmax(0, 1fr) minmax(0, 1fr) auto;
+                gap:10px;
+                align-items:end;
+                border-top:1px solid var(--line);
+                padding-top:12px
+            }
+
+            .selection-actions {
+                display:flex;
+                gap:8px;
+                align-items:center
+            }
+
+            .clip-play {
+                border:1px solid #d8d5e3;
+                background:#fff;
+                color:var(--violet-dark);
+                border-radius:8px;
+                padding:7px 10px;
+                font:inherit;
+                font-size:13px;
+                font-weight:700;
+                white-space:nowrap;
+                cursor:pointer
+            }
+
+            .clip-play:hover {
+                background:var(--soft)
+            }
+
+            .selection:first-child {
+                border-top:0;
+                padding-top:0
+            }
+
+            .selection .number {
+                align-self:center;
+                color:var(--violet);
+                font-weight:800
+            }
+
+            .selection label {
+                display:block;
+                font-size:12px;
+                color:var(--muted);
+                margin:0 0 4px
+            }
+
+            .selection input {
+                width:100%;
+                font-variant-numeric:tabular-nums
+            }
+
+            .empty {
+                color:var(--muted);
+                font-size:14px;
+                margin:0
+            }
+
+            .footer {
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                gap:12px;
+                margin-top:18px
+            }
+
+            .count {
+                font-size:13px;
+                color:var(--muted)
+            }
+
+            .timeline-legend {
+                display:flex;
+                flex-wrap:wrap;
+                gap:14px;
+                margin-top:8px;
+                color:var(--muted);
+                font-size:11px
+            }
+
+            .timeline-legend span {
+                display:inline-flex;
+                align-items:center;
+                gap:6px
+            }
+
+            .legend-mark {
+                display:inline-block;
+                width:12px;
+                height:3px;
+                border-radius:2px;
+                background:#8876de
+            }
+
+            .legend-mark.main {
+                width:2px;
+                height:12px;
+                background:#302b4c
+            }
+
+            .legend-mark.preview {
+                width:3px;
+                height:12px;
+                background:#ed633d
+            }
+
+            /* 右クリックで表示する、範囲削除メニュー */
+            .context-menu {
+                position:fixed;
+                z-index:30;
+                min-width:180px;
+                padding:5px;
+                border:1px solid var(--line);
+                border-radius:9px;
+                background:var(--paper);
+                box-shadow:0 8px 24px #27204424;
+            }
+            .context-menu button {
+                width:100%;
+                padding:9px 12px;
+                border:0;
+                border-radius:6px;
+                background:transparent;
+                color:#a6482b;
+                text-align:left;
+                font:inherit;
+                cursor:pointer;
+            }
+            .context-menu button:hover {
+                background:#fbefeb;
+            }
+            .notice {
+                min-height:1.4em;
+                color:var(--violet-dark);
+                font-size:13px;
+                margin:8px 0 0
+            }
+
+            .small {
+                font-size:12px;
+                color:var(--muted);
+                margin:12px 0 0
+            }
+
+            /* 画面が狭いときは項目を縦に並べて操作しやすくする */
+            @media(max-width:620px) {
+                main {
+                    width:calc(100% - 22px);
+                    margin:19px auto 36px
+                }
+                section {
+                    padding:17px;
+                    border-radius:12px
+                }
+                .stimulus {
+                    grid-template-columns:1fr
+                }
+                .selection {
+                    grid-template-columns:30px 1fr 1fr;
+                    gap:8px
+                }
+                .selection-actions {
+                    grid-column:2/4;
+                    justify-content:flex-end
+                }
+                .selection .delete {
+                    justify-self:end
+                }
+                .actions, .footer {
+                    align-items:stretch;
+                    flex-direction:column
+                }
+                .playrow {
+                    gap:10px
+                }
+                .source {
+                    font-size:13px
+                }
+            }
+        
+            /* 刺激選択画面と同じ時間軸にし、音源の長さと現在位置を見せる */
+            .stimulus-timeline {
+                cursor:default;
+                touch-action:auto;
+            }
+            /* 7つの選択肢を横一列に並べ、選んだ値を色で示す */
+            .rating-options {
+                display:grid;
+                grid-template-columns:repeat(7, minmax(0, 1fr));
+                gap:8px;
+                margin:18px 0 12px;
+            }
+            .rating-options label {
+                position:relative;
+                display:flex;
+                min-height:50px;
+                align-items:center;
+                justify-content:center;
+                border:1px solid var(--line);
+                border-radius:9px;
+                background:#fff;
+                color:var(--ink);
+                font-size:18px;
+                font-weight:700;
+                cursor:pointer;
+            }
+            .rating-options input {
+                position:absolute;
+                opacity:0;
+                width:1px;
+                height:1px;
+            }
+            .rating-options label:has(input:checked) {
+                border-color:var(--violet);
+                background:var(--soft);
+                color:var(--violet-dark);
+                box-shadow:inset 0 0 0 1px var(--violet);
+            }
+            .rating-options label:has(input:focus-visible) {
+                outline:3px solid #b4aaf0;
+                outline-offset:2px;
+            }
+            .rating-anchors {
+                display:grid;
+                grid-template-columns:1fr 1fr 1fr;
+                gap:8px;
+                color:var(--muted);
+                font-size:12px;
+            }
+            .rating-anchors span:nth-child(2) {
+                text-align:center;
+            }
+            .rating-anchors span:last-child {
+                text-align:right;
+            }
+            .rating-group {
+                min-width:0;
+                margin:0;
+                padding:0;
+                border:0;
+            }
+            .rating-group legend {
+                font-size:17px;
+                font-weight:700;
+                line-height:1.5;
+            }
+            .rating-note {
+                color:var(--muted);
+                font-size:13px;
+                margin:10px 0 0;
+            }
+            .once-status {
+                min-height:1.5em;
+                color:var(--violet-dark);
+                font-size:14px;
+                margin:12px 0 0;
+            }
+            .submit-row {
+                display:flex;
+                align-items:center;
+                gap:14px;
+                flex-wrap:wrap;
+            }
+            @media(max-width:620px) {
+                .rating-options {
+                    gap:4px;
+                }
+                .rating-options label {
+                    min-height:44px;
+                }
+                .rating-anchors {
+                    font-size:10px;
+                }
+            }
+
+    </style>
+    <script src="./gas-client.js"></script>
+</head>
+<body>
+    <!-- 刺激を一度だけ聴いて、2つの評価を回答する画面 -->
+    <main>
+        <p class="eyebrow">LISTENING EXPERIMENT · STIMULUS</p>
+        <h1>刺激を聴いて評価する</h1>
+        <p class="intro">基準刺激と比較して、提示された刺激の人間らしさと、その判断への確信度を回答してください。</p>
+        <div class="source">
+            <strong>再生について：</strong>再生ボタンを押すと刺激は一度だけ再生されます。再生中の一時停止、巻き戻し、再生し直しはできません。
+        </div>
+
+        <!-- 再生ボタンだけで刺激を一度提示し、再生完了後に評価欄を有効にする -->
+        <section aria-labelledby="stimulus-heading">
+            <h2 id="stimulus-heading">実験対象刺激（仮）</h2>
+            <div class="track-name">Inst_Choose Your Fighter.wav</div>
+            <audio id="audio" preload="metadata" src="./audio/Inst_Choose%20Your%20Fighter.wav"></audio>
+            <div class="playrow">
+                <button class="play" id="playOnceButton" type="button" disabled>刺激を再生（1回）</button>
+                <span class="clock"><span id="currentTime">00:00.0</span> / <span id="duration">--:--.-</span></span>
+            </div>
+            <!-- 音源全体に対する再生位置を表示する。ここから再生位置は変更できない -->
+            <div class="timeline-label">
+                <strong>再生位置</strong>
+                <span>操作できません</span>
+            </div>
+            <div class="timeline stimulus-timeline" id="stimulusTimeline" role="progressbar" aria-label="刺激音源の再生位置" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">
+                <div class="playhead" id="stimulusPlayhead"></div>
+            </div>
+            <div class="ruler">
+                <span>00:00.0</span>
+                <span id="durationRuler">--:--.-</span>
+            </div>
+            <p class="once-status" id="playStatus" role="status" aria-live="polite">音源を準備しています。</p>
+        </section>
+
+        <form id="ratingForm">
+            <section aria-labelledby="human-rating-heading">
+                <fieldset class="rating-group" id="humanScale" disabled>
+                    <legend id="human-rating-heading">基準刺激と比べて、この刺激はどの程度人間らしいと感じましたか？</legend>
+                    <div class="rating-options">
+                        <label><input type="radio" name="humanLikeness" value="1" aria-label="1：基準刺激よりかなり人間らしくない"><span>1</span></label>
+                        <label><input type="radio" name="humanLikeness" value="2" aria-label="2：基準刺激より人間らしくない"><span>2</span></label>
+                        <label><input type="radio" name="humanLikeness" value="3" aria-label="3：基準刺激よりやや人間らしくない"><span>3</span></label>
+                        <label><input type="radio" name="humanLikeness" value="4" aria-label="4：基準刺激と同程度"><span>4</span></label>
+                        <label><input type="radio" name="humanLikeness" value="5" aria-label="5：基準刺激よりやや人間らしい"><span>5</span></label>
+                        <label><input type="radio" name="humanLikeness" value="6" aria-label="6：基準刺激より人間らしい"><span>6</span></label>
+                        <label><input type="radio" name="humanLikeness" value="7" aria-label="7：基準刺激よりかなり人間らしい"><span>7</span></label>
+                    </div>
+                    <div class="rating-anchors" aria-hidden="true">
+                        <span>基準刺激より人間らしくない</span>
+                        <span>同程度</span>
+                        <span>基準刺激より人間らしい</span>
+                    </div>
+                </fieldset>
+            </section>
+
+            <section aria-labelledby="confidence-heading">
+                <fieldset class="rating-group" id="confidenceScale" disabled>
+                    <legend id="confidence-heading">その判断にどの程度確信がありますか？</legend>
+                    <div class="rating-options">
+                        <label><input type="radio" name="confidence" value="1" aria-label="1：まったく確信がない"><span>1</span></label>
+                        <label><input type="radio" name="confidence" value="2" aria-label="2：ほとんど確信がない"><span>2</span></label>
+                        <label><input type="radio" name="confidence" value="3" aria-label="3：あまり確信がない"><span>3</span></label>
+                        <label><input type="radio" name="confidence" value="4" aria-label="4：確信度は中程度"><span>4</span></label>
+                        <label><input type="radio" name="confidence" value="5" aria-label="5：やや確信がある"><span>5</span></label>
+                        <label><input type="radio" name="confidence" value="6" aria-label="6：かなり確信がある"><span>6</span></label>
+                        <label><input type="radio" name="confidence" value="7" aria-label="7：非常に確信がある"><span>7</span></label>
+                    </div>
+                    <div class="rating-anchors" aria-hidden="true">
+                        <span>まったく確信がない</span>
+                        <span>確信度は中程度</span>
+                        <span>非常に確信がある</span>
+                    </div>
+                </fieldset>
+            </section>
+
+            <section>
+                <div class="submit-row">
+                    <button class="primary" id="submitButton" type="submit" disabled>回答を確定</button>
+                    <p class="once-status" id="submitStatus" role="status" aria-live="polite">刺激の再生後、2つの評価を選んでください。</p>
+                </div>
+                <p class="small">この評価は、最後の自由記述を確定したときにまとめて保存されます。</p>
+            </section>
+        </form>
+    </main>
+    <script>
+        (() => {
+            // 刺激音源と、再生状態・評価欄を画面から取得
+            const audio=document.querySelector('#audio');
+            const playOnceButton=document.querySelector('#playOnceButton');
+            const currentTime=document.querySelector('#currentTime');
+            const duration=document.querySelector('#duration');
+            const durationRuler=document.querySelector('#durationRuler');
+            const stimulusTimeline=document.querySelector('#stimulusTimeline');
+            const stimulusPlayhead=document.querySelector('#stimulusPlayhead');
+            const playStatus=document.querySelector('#playStatus');
+            const humanScale=document.querySelector('#humanScale');
+            const confidenceScale=document.querySelector('#confidenceScale');
+            const submitButton=document.querySelector('#submitButton');
+            const submitStatus=document.querySelector('#submitStatus');
+            const ratingForm=document.querySelector('#ratingForm');
+            let experimentState=null;
+            try {
+                experimentState=JSON.parse(sessionStorage.getItem('listeningExperiment.state')||'null');
+            } catch(error) {}
+            if(experimentState?.stimuli?.length){
+                const stimulusId=experimentState.stimuli[experimentState.currentIndex];
+                audio.src=experimentState.audioByStimulus?.[stimulusId]||`./audio/${encodeURIComponent(stimulusId+'.wav')}`;
+                document.querySelector('#stimulus-heading').textContent=`実験対象刺激 ${experimentState.currentIndex+1} / ${experimentState.stimuli.length}`;
+                document.querySelector('.track-name').textContent=stimulusId
+            }
+            let playbackStarted=false;
+            let playbackFinished=false;
+            let progressFrame=0;
+
+            // 秒数を分:秒の表示に変換
+            const formatTime=seconds => {
+                if(!Number.isFinite(seconds))return '--:--.-';
+                const minutes=Math.floor(seconds/60);
+                const remainder=(seconds%60).toFixed(1);
+                return `${String(minutes).padStart(2,'0')}:${String(remainder).padStart(4,'0')}`
+            };
+
+            // 音源の現在位置を時間軸上のつまみに反映する
+            function updateProgress() {
+                const total=Number.isFinite(audio.duration)?audio.duration:0;
+                const played=audio.currentTime||0;
+                const ratio=total?Math.min(1, played/total):0;
+                stimulusPlayhead.style.transform=`translateX(${Math.max(0,stimulusTimeline.clientWidth*ratio-1)}px)`;
+                stimulusTimeline.setAttribute('aria-valuemax', String(total));
+                stimulusTimeline.setAttribute('aria-valuenow', String(played))
+            }
+
+            // 再生中は毎フレーム位置を更新して、つまみを滑らかに動かす
+            function animateProgress() {
+                if(progressFrame)return;
+                const tick=() => {
+                    updateProgress();
+                    if(!audio.paused&&!audio.ended)progressFrame=requestAnimationFrame(tick);
+                    else progressFrame=0
+                };
+                progressFrame=requestAnimationFrame(tick)
+            }
+
+            function stopProgress() {
+                if(progressFrame)cancelAnimationFrame(progressFrame);
+                progressFrame=0;
+                updateProgress()
+            }
+
+            // 音源の長さを読み込んでから、1回だけ再生するボタンを有効にする
+            audio.addEventListener('loadedmetadata', () => {
+                duration.textContent=formatTime(audio.duration);
+                durationRuler.textContent=formatTime(audio.duration);
+                updateProgress();
+                playOnceButton.disabled=false;
+                playStatus.textContent='準備ができました。再生ボタンを押すと一度だけ再生されます。'
+            });
+
+            // 再生開始後はボタンを無効にし、二度目の再生を防ぐ
+            playOnceButton.addEventListener('click', async () => {
+                if(playbackStarted)return;
+                playbackStarted=true;
+                playOnceButton.disabled=true;
+                playOnceButton.textContent='再生中…';
+                playStatus.textContent='刺激を再生しています。再生が終わるまでお待ちください。';
+                try {
+                    await audio.play()
+                } catch(error) {
+                    playbackStarted=false;
+                    playOnceButton.disabled=false;
+                    playOnceButton.textContent='刺激を再生（1回）';
+                    playStatus.textContent='音源を再生できませんでした。もう一度お試しください。'
+                }
+            });
+
+            // 再生時刻と時間軸を更新し、再生完了後に評価欄を有効にする
+            audio.addEventListener('timeupdate', () => {
+                currentTime.textContent=formatTime(audio.currentTime);
+                updateProgress()
+            });
+            audio.addEventListener('play', animateProgress);
+            audio.addEventListener('pause', stopProgress);
+            audio.addEventListener('ended', () => {
+                playbackFinished=true;
+                stopProgress();
+                playOnceButton.textContent='再生済み';
+                playStatus.textContent='再生が終わりました。人間らしさと確信度を回答してください。';
+                humanScale.disabled=false;
+                confidenceScale.disabled=false;
+                updateSubmitState()
+            });
+            window.addEventListener('resize', updateProgress);
+            audio.addEventListener('error', () => {
+                playOnceButton.disabled=true;
+                playStatus.textContent='音源ファイルを読み込めません。音源とHTMLの配置を確認してください。'
+            });
+
+            // 再生が終わり、両方の7件法に回答したときだけ確定できる
+            function updateSubmitState() {
+                const humanAnswer=ratingForm.querySelector('input[name="humanLikeness"]:checked');
+                const confidenceAnswer=ratingForm.querySelector('input[name="confidence"]:checked');
+                submitButton.disabled=!(playbackFinished&&humanAnswer&&confidenceAnswer)
+            }
+            ratingForm.addEventListener('change', updateSubmitState);
+            ratingForm.addEventListener('submit', event => {
+                event.preventDefault();
+                if(submitButton.disabled)return;
+                submitButton.disabled=true;
+                if(experimentState?.stimuli?.length){
+                    const humanAnswer=ratingForm.querySelector('input[name="humanLikeness"]:checked')?.value;
+                    const confidenceAnswer=ratingForm.querySelector('input[name="confidence"]:checked')?.value;
+                    const current=experimentState.responses[experimentState.currentIndex]||{};
+                    experimentState.responses[experimentState.currentIndex]={...current,stimulusId:experimentState.stimuli[experimentState.currentIndex],humanLikeness:Number(humanAnswer),confidence:Number(confidenceAnswer)};
+                    try{sessionStorage.setItem('listeningExperiment.state',JSON.stringify(experimentState))}catch(error){}
+                    location.href='./index.html?mode=experiment'
+                } else {
+                    submitStatus.textContent='回答を選択しました。続けて範囲選択と自由記述に進んでください。'
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

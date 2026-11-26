@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>聴取実験｜評価理由の自由記述</title>
+    <style>
+            /* 色を変えるときにまとめて調整できるよう、基本色を変数にした */
+            :root {
+                color-scheme:light;
+                --ink:#242237;
+                --muted:#69677a;
+                --line:#e3e1ed;
+                --paper:#fff;
+                --wash:#f7f6fb;
+                --violet:#6754c8;
+                --violet-dark:#4d3da6;
+                --soft:#eeeafd;
+                --orange:#e07b4f
+            }
+
+            /* 余白や枠線を含めた大きさで要素を配置 */
+            * {
+                box-sizing:border-box
+            }
+
+            body {
+                margin:0;
+                background:var(--wash);
+                color:var(--ink);
+                font-family:-apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+                line-height:1.55
+            }
+
+            /* ページ全体の幅と見出し、説明文の見た目 */
+            main {
+                width:min(900px, 100% - 32px);
+                margin:32px auto 56px
+            }
+
+            .eyebrow {
+                font-size:12px;
+                font-weight:700;
+                letter-spacing:.12em;
+                color:var(--violet);
+                margin:0 0 8px
+            }
+
+            h1 {
+                font-size:clamp(23px, 4vw, 32px);
+                line-height:1.3;
+                margin:0 0 8px;
+                letter-spacing:.01em
+            }
+
+            .intro {
+                color:var(--muted);
+                margin:0 0 24px;
+                max-width:70ch
+            }
+
+            .source {
+                background:#f0eef8;
+                border-left:3px solid var(--violet);
+                padding:12px 16px;
+                border-radius:0 8px 8px 0;
+                margin:0 0 20px;
+                font-size:14px
+            }
+
+            .source strong {
+                color:var(--ink)
+            }
+
+            /* 音源操作と選択一覧を読みやすく分けて表示 */
+            section {
+                background:var(--paper);
+                border:1px solid var(--line);
+                border-radius:14px;
+                padding:22px;
+                margin:16px 0;
+                box-shadow:0 2px 8px #27204408
+            }
+
+            h2 {
+                font-size:17px;
+                margin:0 0 14px
+            }
+
+            .stimulus {
+                display:grid;
+                grid-template-columns:minmax(0, 1fr) auto;
+                gap:14px;
+                align-items:end
+            }
+
+            .field label {
+                display:block;
+                font-size:13px;
+                font-weight:700;
+                margin-bottom:6px
+            }
+
+            .field input {
+                width:100%;
+                font:inherit
+            }
+
+            .text-input, .time-input {
+                border:1px solid #d8d5e3;
+                border-radius:8px;
+                padding:9px 11px;
+                background:white;
+                color:var(--ink)
+            }
+
+            .track-name {
+                font-size:13px;
+                color:var(--muted);
+                margin-top:8px;
+                overflow-wrap:anywhere
+            }
+
+            .playrow {
+                display:flex;
+                align-items:center;
+                gap:14px;
+                margin:20px 0 8px
+            }
+
+            .play {
+                border:0;
+                border-radius:9px;
+                padding:10px 18px;
+                background:var(--violet);
+                color:white;
+                font:inherit;
+                font-weight:700;
+                cursor:pointer;
+                min-width:100px
+            }
+
+            .play:hover {
+                background:var(--violet-dark)
+            }
+
+            .clock {
+                font-variant-numeric:tabular-nums;
+                color:var(--muted);
+                font-size:14px
+            }
+
+            .seek {
+                width:100%;
+                accent-color:var(--violet);
+                cursor:pointer
+            }
+
+            .ruler {
+                display:flex;
+                justify-content:space-between;
+                font-size:12px;
+                color:var(--muted);
+                font-variant-numeric:tabular-nums;
+                margin-top:-4px
+            }
+
+            .timeline-label {
+                display:flex;
+                justify-content:space-between;
+                gap:12px;
+                align-items:baseline;
+                margin:21px 0 7px
+            }
+
+            .timeline-label strong {
+                font-size:14px
+            }
+
+            .timeline-label span, .hint {
+                font-size:12px;
+                color:var(--muted)
+            }
+
+            /* 時間軸とその上に重ねる選択範囲、再生位置の見た目 */
+            .timeline {
+                height:42px;
+                position:relative;
+                background:linear-gradient(180deg, #f2f0f8, #e9e6f2);
+                border:1px solid #d9d5e5;
+                border-radius:8px;
+                overflow:hidden;
+                touch-action:none;
+                cursor:crosshair;
+                user-select:none
+            }
+
+            .timeline:before {
+                content:"";
+                position:absolute;
+                inset:50% 0 auto;
+                height:1px;
+                background:#cfcbdb
+            }
+
+            .range {
+                position:absolute;
+                top:0;
+                height:100%;
+                background:#8876de80;
+                border-left:2px solid var(--violet);
+                border-right:2px solid var(--violet);
+                pointer-events:auto;
+                cursor:pointer
+            }
+
+            .range-handle {
+                position:absolute;
+                top:0;
+                width:18px;
+                height:100%;
+                z-index:1;
+                pointer-events:auto;
+                cursor:ew-resize;
+                touch-action:none
+            }
+
+            .range-handle:after {
+                content:"";
+                position:absolute;
+                top:8px;
+                bottom:8px;
+                left:8px;
+                width:2px;
+                border-radius:2px;
+                background:var(--violet-dark)
+            }
+
+            .range-handle.start {
+                left:-9px
+            }
+
+            .range-handle.end {
+                right:-9px
+            }
+
+            .range-handle:hover:after {
+                width:4px;
+                left:7px;
+                background:#372b83
+            }
+
+            .draft {
+                position:absolute;
+                top:0;
+                height:100%;
+                background:#e07b4f70;
+                border-left:2px solid var(--orange);
+                border-right:2px solid var(--orange);
+                pointer-events:none
+            }
+
+            .playhead {
+                position:absolute;
+                left:0;
+                top:0;
+                bottom:0;
+                width:2px;
+                will-change:transform;
+                background:#302b4c;
+                pointer-events:none;
+                z-index:2
+            }
+
+            .playhead:before {
+                content:"";
+                position:absolute;
+                top:0;
+                left:-4px;
+                border-left:5px solid transparent;
+                border-right:5px solid transparent;
+                border-top:7px solid #302b4c
+            }
+
+            .previewhead {
+                position:absolute;
+                left:0;
+                top:0;
+                bottom:0;
+                width:3px;
+                will-change:transform;
+                background:#ed633d;
+                box-shadow:0 0 0 1px #fff9;
+                pointer-events:none;
+                z-index:4
+            }
+
+            .previewhead:before {
+                content:"";
+                position:absolute;
+                top:0;
+                left:-4px;
+                border-left:5px solid transparent;
+                border-right:5px solid transparent;
+                border-top:7px solid #ed633d
+            }
+
+            .timeline:focus-visible, .range:focus-visible, .seek:focus-visible, button:focus-visible, input:focus-visible {
+                outline:3px solid #b4aaf0;
+                outline-offset:2px
+            }
+
+            .actions {
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                gap:12px;
+                margin-top:13px
+            }
+
+            .primary, .secondary, .delete {
+                font:inherit;
+                font-weight:700;
+                border-radius:8px;
+                padding:9px 14px;
+                cursor:pointer
+            }
+
+            .primary {
+                border:1px solid var(--violet);
+                background:var(--violet);
+                color:white
+            }
+
+            .primary:hover {
+                background:var(--violet-dark)
+            }
+
+            .secondary {
+                border:1px solid var(--line);
+                background:#fff;
+                color:var(--ink)
+            }
+
+            .delete {
+                border:1px solid #ead8d1;
+                background:white;
+                color:#a6482b;
+                padding:7px 10px;
+                font-size:13px
+            }
+
+            .hint {
+                margin:9px 0 0
+            }
+
+            /* 登録済み範囲の一覧と編集ボタンの配置 */
+            .selection-list {
+                display:grid;
+                gap:10px
+            }
+
+            .selection {
+                display:grid;
+                grid-template-columns:40px minmax(0, 1fr) minmax(0, 1fr) auto;
+                gap:10px;
+                align-items:end;
+                border-top:1px solid var(--line);
+                padding-top:12px
+            }
+
+            .selection-actions {
+                display:flex;
+                gap:8px;
+                align-items:center
+            }
+
+            .clip-play {
+                border:1px solid #d8d5e3;
+                background:#fff;
+                color:var(--violet-dark);
+                border-radius:8px;
+                padding:7px 10px;
+                font:inherit;
+                font-size:13px;
+                font-weight:700;
+                white-space:nowrap;
+                cursor:pointer
+            }
+
+            .clip-play:hover {
+                background:var(--soft)
+            }
+
+            .selection:first-child {
+                border-top:0;
+                padding-top:0
+            }
+
+            .selection .number {
+                align-self:center;
+                color:var(--violet);
+                font-weight:800
+            }
+
+            .selection label {
+                display:block;
+                font-size:12px;
+                color:var(--muted);
+                margin:0 0 4px
+            }
+
+            .selection input {
+                width:100%;
+                font-variant-numeric:tabular-nums
+            }
+
+            .empty {
+                color:var(--muted);
+                font-size:14px;
+                margin:0
+            }
+
+            .footer {
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                gap:12px;
+                margin-top:18px
+            }
+
+            .count {
+                font-size:13px;
+                color:var(--muted)
+            }
+
+            .timeline-legend {
+                display:flex;
+                flex-wrap:wrap;
+                gap:14px;
+                margin-top:8px;
+                color:var(--muted);
+                font-size:11px
+            }
+
+            .timeline-legend span {
+                display:inline-flex;
+                align-items:center;
+                gap:6px
+            }
+
+            .legend-mark {
+                display:inline-block;
+                width:12px;
+                height:3px;
+                border-radius:2px;
+                background:#8876de
+            }
+
+            .legend-mark.main {
+                width:2px;
+                height:12px;
+                background:#302b4c
+            }
+
+            .legend-mark.preview {
+                width:3px;
+                height:12px;
+                background:#ed633d
+            }
+
+            /* 右クリックで表示する、範囲削除メニュー */
+            .context-menu {
+                position:fixed;
+                z-index:30;
+                min-width:180px;
+                padding:5px;
+                border:1px solid var(--line);
+                border-radius:9px;
+                background:var(--paper);
+                box-shadow:0 8px 24px #27204424;
+            }
+            .context-menu button {
+                width:100%;
+                padding:9px 12px;
+                border:0;
+                border-radius:6px;
+                background:transparent;
+                color:#a6482b;
+                text-align:left;
+                font:inherit;
+                cursor:pointer;
+            }
+            .context-menu button:hover {
+                background:#fbefeb;
+            }
+            .notice {
+                min-height:1.4em;
+                color:var(--violet-dark);
+                font-size:13px;
+                margin:8px 0 0
+            }
+
+            .small {
+                font-size:12px;
+                color:var(--muted);
+                margin:12px 0 0
+            }
+
+            /* 画面が狭いときは項目を縦に並べて操作しやすくする */
+            @media(max-width:620px) {
+                main {
+                    width:calc(100% - 22px);
+                    margin:19px auto 36px
+                }
+                section {
+                    padding:17px;
+                    border-radius:12px
+                }
+                .stimulus {
+                    grid-template-columns:1fr
+                }
+                .selection {
+                    grid-template-columns:30px 1fr 1fr;
+                    gap:8px
+                }
+                .selection-actions {
+                    grid-column:2/4;
+                    justify-content:flex-end
+                }
+                .selection .delete {
+                    justify-self:end
+                }
+                .actions, .footer {
+                    align-items:stretch;
+                    flex-direction:column
+                }
+                .playrow {
+                    gap:10px
+                }
+                .source {
+                    font-size:13px
+                }
+            }
+        
+            /* 刺激選択画面と同じ時間軸にし、音源の長さと現在位置を見せる */
+            .stimulus-timeline {
+                cursor:default;
+                touch-action:auto;
+            }
+            /* 7つの選択肢を横一列に並べ、選んだ値を色で示す */
+            .rating-options {
+                display:grid;
+                grid-template-columns:repeat(7, minmax(0, 1fr));
+                gap:8px;
+                margin:18px 0 12px;
+            }
+            .rating-options label {
+                position:relative;
+                display:flex;
+                min-height:50px;
+                align-items:center;
+                justify-content:center;
+                border:1px solid var(--line);
+                border-radius:9px;
+                background:#fff;
+                color:var(--ink);
+                font-size:18px;
+                font-weight:700;
+                cursor:pointer;
+            }
+            .rating-options input {
+                position:absolute;
+                opacity:0;
+                width:1px;
+                height:1px;
+            }
+            .rating-options label:has(input:checked) {
+                border-color:var(--violet);
+                background:var(--soft);
+                color:var(--violet-dark);
+                box-shadow:inset 0 0 0 1px var(--violet);
+            }
+            .rating-options label:has(input:focus-visible) {
+                outline:3px solid #b4aaf0;
+                outline-offset:2px;
+            }
+            .rating-anchors {
+                display:grid;
+                grid-template-columns:1fr 1fr 1fr;
+                gap:8px;
+                color:var(--muted);
+                font-size:12px;
+            }
+            .rating-anchors span:nth-child(2) {
+                text-align:center;
+            }
+            .rating-anchors span:last-child {
+                text-align:right;
+            }
+            .rating-group {
+                min-width:0;
+                margin:0;
+                padding:0;
+                border:0;
+            }
+            .rating-group legend {
+                font-size:17px;
+                font-weight:700;
+                line-height:1.5;
+            }
+            .rating-note {
+                color:var(--muted);
+                font-size:13px;
+                margin:10px 0 0;
+            }
+            .once-status {
+                min-height:1.5em;
+                color:var(--violet-dark);
+                font-size:14px;
+                margin:12px 0 0;
+            }
+            .submit-row {
+                display:flex;
+                align-items:center;
+                gap:14px;
+                flex-wrap:wrap;
+            }
+            @media(max-width:620px) {
+                .rating-options {
+                    gap:4px;
+                }
+                .rating-options label {
+                    min-height:44px;
+                }
+                .rating-anchors {
+                    font-size:10px;
+                }
+            }
+
+    
+            /* 自由記述欄を広く取り、入力文字数も確認できるようにした */
+            .response-field label {
+                display:block;
+                margin-bottom:8px;
+                font-size:15px;
+                font-weight:700;
+            }
+            .response-field textarea {
+                display:block;
+                width:100%;
+                min-height:220px;
+                padding:12px 14px;
+                border:1px solid #d8d5e3;
+                border-radius:9px;
+                background:#fff;
+                color:var(--ink);
+                font:inherit;
+                line-height:1.7;
+                resize:vertical;
+            }
+            .response-field textarea:focus-visible {
+                outline:3px solid #b4aaf0;
+                outline-offset:2px;
+            }
+            .response-meta {
+                display:flex;
+                justify-content:space-between;
+                gap:12px;
+                margin-top:8px;
+                color:var(--muted);
+                font-size:12px;
+            }
+            .response-actions {
+                display:flex;
+                align-items:center;
+                gap:12px;
+                flex-wrap:wrap;
+            }
+            .response-actions a {
+                display:inline-block;
+                text-decoration:none;
+            }
+
+    </style>
+    <script src="./gas-client.js"></script>
+</head>
+<body>
+    <!-- 人間らしさの判断理由を自由に記入する画面 -->
+    <main>
+        <p class="eyebrow">LISTENING EXPERIMENT · RESPONSE</p>
+        <h1>評価の理由を自由に記入する</h1>
+        <p class="intro">先ほどの人間らしさの評価について、どのような点をもとに判断したか、覚えている範囲でお書きください。</p>
+
+        <form id="responseForm">
+            <section aria-labelledby="response-heading">
+                <h2 id="response-heading">自由記述</h2>
+                <div class="response-field">
+                    <label for="reason">人間らしさをそのように評価した理由</label>
+                    <textarea id="reason" name="reason" required placeholder="思い浮かんだことを自由にお書きください。"></textarea>
+                    <div class="response-meta">
+                        <span>思い当たることを、ご自身の言葉で記入してください。</span>
+                        <span id="characterCount">0文字</span>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <div class="response-actions">
+                    <button class="primary" id="submitButton" type="submit" disabled>回答を確定</button>
+                    <a class="secondary" id="practiceReviewLink" href="./practice.html?returnTo=response">基準刺激・操作方法を確認</a>
+                </div>
+                <p class="once-status" id="submitStatus" role="status" aria-live="polite">確認を終えるとこの画面に戻り、記入内容はそのまま続けられます。</p>
+                <p class="small">回答は、全刺激への回答が終わった時点でまとめて保存されます。</p>
+            </section>
+        </form>
+    </main>
+    <script>
+        (() => {
+            // 記述欄、文字数表示、回答ボタンを画面から取得
+            const responseForm=document.querySelector('#responseForm');
+            const reason=document.querySelector('#reason');
+            const characterCount=document.querySelector('#characterCount');
+            const submitButton=document.querySelector('#submitButton');
+            const submitStatus=document.querySelector('#submitStatus');
+            const draftKey='listeningExperiment.freeResponseDraft';
+            try {
+                const experimentState=JSON.parse(sessionStorage.getItem('listeningExperiment.state')||'null');
+                if(experimentState?.baselineAudioUrl){
+                    document.querySelector('#practiceReviewLink').href='./practice.html?returnTo=response'
+                }
+            } catch(error) {}
+            let savedDraft=null;
+            try {
+                savedDraft=sessionStorage.getItem(draftKey)
+            } catch(error) {
+                // ブラウザーがローカルファイルの保存領域を使えない場合は下の代替を使う
+            }
+            if(savedDraft===null){
+                try {
+                    const windowDraft=JSON.parse(window.name);
+                    if(windowDraft.key===draftKey)savedDraft=windowDraft.value
+                } catch(error) {
+                    // 前の画面からの記入内容がない場合は空欄のままにする
+                }
+            }
+            if(savedDraft!==null){
+                reason.value=savedDraft;
+                characterCount.textContent=`${reason.value.length}文字`;
+                submitButton.disabled=!reason.value.trim()
+            }
+            if(new URLSearchParams(location.search).get('from')==='practice'){
+                submitStatus.textContent='基準刺激と操作方法を確認しました。記述を続けてください。'
+            }
+
+            // 入力内容の長さを表示し、空欄では確定できないようにする
+            reason.addEventListener('input', () => {
+                characterCount.textContent=`${reason.value.length}文字`;
+                try {
+                    sessionStorage.setItem(draftKey, reason.value)
+                } catch(error) {
+                    // ローカルファイルで保存領域が使えない場合にも画面移動で内容を保つ
+                }
+                window.name=JSON.stringify({key:draftKey, value:reason.value});
+                submitButton.disabled=!reason.value.trim()
+            });
+
+            // 回答確定の操作を受け付ける。試作段階では保存は行わない
+            responseForm.addEventListener('submit', async event => {
+                event.preventDefault();
+                if(submitButton.disabled)return;
+                submitButton.disabled=true;
+                let experimentState=null;
+                try{experimentState=JSON.parse(sessionStorage.getItem('listeningExperiment.state')||'null')}catch(error){}
+                if(experimentState?.stimuli?.length){
+                    const index=experimentState.currentIndex;
+                    const current=experimentState.responses[index]||{};
+                    experimentState.responses[index]={...current,freeResponse:reason.value.trim()};
+                    experimentState.currentIndex++;
+                    try{sessionStorage.setItem('listeningExperiment.state',JSON.stringify(experimentState))}catch(error){}
+                    if(experimentState.currentIndex<experimentState.stimuli.length){
+                        try{sessionStorage.removeItem(draftKey)}catch(error){}
+                        window.name='';
+                        location.href='./stimulus.html';
+                    }else{
+                        submitStatus.textContent='回答を保存しています…';
+                        try{
+                            const state=JSON.parse(sessionStorage.getItem('listeningExperiment.state')||'{}');
+                            state.completionToken=state.completionToken||crypto.randomUUID().replaceAll('-','');
+                            sessionStorage.setItem('listeningExperiment.state',JSON.stringify(state));
+                            await gasPostAndWait({action:'complete',token:state.completionToken,experimentId:state.experimentId,participantInfo:state.participantInfo,responses:state.responses});
+                            try{sessionStorage.removeItem(draftKey)}catch(error){}
+                            window.name='';
+                            responseForm.innerHTML='<section><h2>実験は終了です</h2><p>ご協力ありがとうございました。回答を保存しました。</p></section>';
+                        }catch(error){
+                            submitButton.disabled=false;
+                            experimentState.completionToken=null;
+                            experimentState.currentIndex--;
+                            try{sessionStorage.setItem('listeningExperiment.state',JSON.stringify(experimentState))}catch(storageError){}
+                            submitStatus.textContent=`回答を保存できませんでした。接続を確認して再度「回答を確定」してください。 (${error.message})`;
+                        }
+                    }
+                    return
+                }
+                try {
+                    sessionStorage.removeItem(draftKey)
+                } catch(error) {
+                    // 保存領域が使えない場合は無視する
+                }
+                window.name='';
+                submitStatus.textContent='回答を受け付けました。この試作画面では保存・送信されません。'
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>聴取実験｜実験作成</title>
+<style>
+:root{color-scheme:light;--ink:#242237;--muted:#69677a;--line:#e3e1ed;--wash:#f7f6fb;--violet:#6754c8;--soft:#eeeafd}
+*{box-sizing:border-box}body{margin:0;background:var(--wash);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;line-height:1.55}main{width:min(820px,100% - 32px);margin:32px auto 60px}.eyebrow{font-size:12px;letter-spacing:.12em;color:var(--violet);font-weight:700;margin:0 0 8px}h1{font-size:30px;margin:0 0 8px}h2{font-size:18px;margin:0 0 12px}.intro,.note{color:var(--muted)}section{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;margin:16px 0;box-shadow:0 2px 8px #27204408}.field{display:grid;gap:6px;margin:14px 0}.field input[type=text]{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;width:min(320px,100%)}.drop{display:grid;place-items:center;min-height:142px;padding:16px;text-align:center;border:2px dashed #c9c4dd;border-radius:12px;background:#fbfaff;cursor:pointer;transition:.15s}.drop.dragging{border-color:var(--violet);background:var(--soft)}.drop input{position:absolute;width:1px;height:1px;opacity:0}.drop strong{display:block}.file-list{margin:10px 0 0;padding-left:22px;color:var(--muted)}.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.button{font:inherit;font-weight:700;color:#fff;background:var(--violet);border:0;border-radius:8px;padding:11px 16px;cursor:pointer}.button:disabled{opacity:.55;cursor:wait}.status{color:#8b3e2e;min-height:1.4em}.result{border-left:3px solid #48a176;background:#f0faf5;padding:14px;border-radius:0 8px 8px 0;margin-top:16px}.result a{overflow-wrap:anywhere;color:#4937a5}.hidden{display:none}.note{font-size:13px}.top-links{display:flex;gap:16px;margin-top:14px;font-size:14px}
+</style>
+    <script src="./gas-client.js"></script>
+</head>
+<body>
+<main>
+<p class="eyebrow">LISTENING EXPERIMENT · BUILDER</p>
+<h1>実験を作成</h1>
+<p class="intro">実験IDと音源を指定すると、参加者向けの実験URLを作成します。アップロードしたWAV音源はGoogle Driveに保存されます。</p>
+<form id="builderForm">
+<section>
+<h2>1. 実験ID</h2>
+<div class="field"><label for="prefix">実験IDの先頭文字（英字1文字）</label><input id="prefix" name="prefix" type="text" value="A" maxlength="1" pattern="[A-Za-z]" required><span class="note">この文字に、参加回数に応じて000〜999の番号を付けます。例：A000</span></div>
+<div class="field"><label for="experimentName">調査名（管理画面で表示）</label><input id="experimentName" name="name" type="text" maxlength="100" placeholder="例：予備実験A"></div>
+</section>
+<section>
+<h2>2. 基準刺激</h2>
+<label class="drop" data-drop="baseline"><span><strong>基準刺激のWAVファイルを選択、またはここへドロップ</strong><span class="note">1曲を指定してください</span><span class="file-list" id="baselineName">未選択</span></span><input type="file" name="baseline" accept=".wav,audio/wav" required></label>
+</section>
+<section>
+<h2>3. 評価対象の刺激</h2>
+<label class="drop" data-drop="targets"><span><strong>評価対象のWAVファイルを選択、またはここへドロップ</strong><span class="note">複数選択できます。提示順は参加者ごとにランダムになります。</span><span class="file-list" id="targetNames">未選択</span></span><input type="file" name="targets" accept=".wav,audio/wav" multiple required></label>
+</section>
+<section>
+<div class="actions"><button class="button" id="createButton" type="submit">実験URLを作成</button><span class="note">同じ先頭文字は一度だけ使えます。</span></div>
+<p class="status" id="status" role="status" aria-live="polite"></p>
+<div class="result hidden" id="result"><strong>参加者向けURL</strong><p><a id="experimentLink" target="_blank" rel="noopener"></a></p><button class="button" type="button" id="copyButton">URLをコピー</button></div>
+</section>
+</form>
+<nav class="top-links"><a href="./admin.html">管理者向け集計</a><a href="./intro.html?exp=A">参加者画面の見本</a></nav>
+</main>
+<script>
+(()=>{
+const form=document.querySelector('#builderForm'),status=document.querySelector('#status'),button=document.querySelector('#createButton'),result=document.querySelector('#result'),link=document.querySelector('#experimentLink');
+function showFiles(input,output){output.textContent=input.files.length?[...input.files].map(file=>file.name).join('、'):'未選択'}
+function readAudio(file){return new Promise((resolve,reject)=>{if(file.size>24*1024*1024){reject(new Error(`${file.name} は24MBを超えています。`));return}const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error(`${file.name} を読み取れません。`));reader.readAsDataURL(file)})}
+async function uploadAudio(file){const token=crypto.randomUUID().replaceAll('-','');const base64=await readAudio(file);return gasPostAndWait({action:'upload',token,name:file.name,mimeType:file.type||'audio/wav',base64})}
+function safeTrackId(prefix,index,file){const slug=file.name.replace(/\.wav$/i,'').replace(/[^\p{L}\p{N}_.-]+/gu,'_').replace(/^[_\-.]+|[_\-.]+$/g,'').slice(0,50)||'track';return `${prefix}_T${String(index).padStart(2,'0')}_${slug}`}
+for(const zone of document.querySelectorAll('.drop')){
+ const input=zone.querySelector('input'),output=document.querySelector(zone.dataset.drop==='baseline'?'#baselineName':'#targetNames');
+ input.addEventListener('change',()=>showFiles(input,output));
+ for(const eventName of ['dragenter','dragover'])zone.addEventListener(eventName,event=>{event.preventDefault();zone.classList.add('dragging')});
+ for(const eventName of ['dragleave','drop'])zone.addEventListener(eventName,event=>{event.preventDefault();zone.classList.remove('dragging')});
+ zone.addEventListener('drop',event=>{const files=[...event.dataTransfer.files].filter(file=>file.name.toLowerCase().endsWith('.wav'));if(input.multiple){const transfer=new DataTransfer();for(const file of files)transfer.items.add(file);input.files=transfer.files}else{const transfer=new DataTransfer();if(files[0])transfer.items.add(files[0]);input.files=transfer.files}showFiles(input,output)})
+}
+form.addEventListener('submit',async event=>{event.preventDefault();result.classList.add('hidden');status.textContent='基準刺激をDriveに保存しています…';button.disabled=true;try{const prefix=document.querySelector('#prefix').value.toUpperCase();const baselineFile=form.querySelector('input[name="baseline"]').files[0];const targetFiles=[...form.querySelector('input[name="targets"]').files];if(!baselineFile||!targetFiles.length)throw new Error('基準刺激と評価対象のWAVを選んでください。');const baselineUpload=await uploadAudio(baselineFile);const baseline={...baselineUpload,name:baselineFile.name};const targets=[];for(let index=0;index<targetFiles.length;index++){status.textContent=`評価対象をDriveに保存しています… (${index+1}/${targetFiles.length})`;const file=targetFiles[index],uploaded=await uploadAudio(file);targets.push({...uploaded,id:safeTrackId(prefix,index+1,file),name:file.name})}status.textContent='実験設定をスプレッドシートに保存しています…';const token=crypto.randomUUID().replaceAll('-','');const created=await gasPostAndWait({action:'create',token,prefix,name:document.querySelector('#experimentName').value,baseline,targets});const url=new URL(`./intro.html?exp=${encodeURIComponent(created.prefix)}`,location.href).href;link.href=url;link.textContent=url;result.classList.remove('hidden');status.textContent=`実験ID ${created.prefix}、評価対象 ${created.targetCount}曲で作成しました。`}catch(error){status.textContent=error.message}finally{button.disabled=false}});
+document.querySelector('#copyButton').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(link.href);status.textContent='URLをコピーしました。'}catch(error){status.textContent='URLを選択してコピーしてください。'}});
+})();
+</script>
+</body>
+</html>

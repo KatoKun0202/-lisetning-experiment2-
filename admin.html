@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>聴取実験｜管理者集計</title>
+<style>
+:root{color-scheme:light;--ink:#242237;--muted:#69677a;--line:#e3e1ed;--wash:#f7f6fb;--violet:#6754c8;--soft:#eeeafd;--green:#27684f}
+*{box-sizing:border-box}body{margin:0;background:var(--wash);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;line-height:1.55}main{width:min(1080px,100% - 32px);margin:32px auto 60px}.eyebrow{font-size:12px;letter-spacing:.12em;color:var(--violet);font-weight:700;margin:0 0 8px}h1{font-size:30px;margin:0 0 8px}h2{font-size:18px;margin:0 0 14px}.intro,.muted{color:var(--muted)}section,.attempt{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;margin:16px 0;box-shadow:0 2px 8px #27204408}.row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.field{display:grid;gap:5px}.field input,.field select{font:inherit;border:1px solid var(--line);border-radius:8px;padding:10px;background:#fff}.button{font:inherit;font-weight:700;color:#fff;background:var(--violet);border:0;border-radius:8px;padding:10px 15px;cursor:pointer}.button.secondary{color:var(--ink);background:var(--soft)}.button:disabled{opacity:.5;cursor:wait}.status{color:#8a3e2f;min-height:1.5em}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.metric{background:#f6f4fc;border-radius:10px;padding:12px}.metric strong{display:block;font-size:22px}.attempt{padding:0;overflow:hidden}.attempt summary{cursor:pointer;padding:16px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}.attempt summary strong{font-size:18px}.badge{font-size:12px;color:var(--green);background:#e7f3ed;border-radius:99px;padding:3px 9px}.badge.pending{color:#815522;background:#fff1da}.detail{border-top:1px solid var(--line);padding:18px 20px}.stimulus{border:1px solid var(--line);border-radius:10px;padding:14px;margin:10px 0}.stimulus h3{margin:0 0 8px;font-size:16px}.stimulus p{margin:5px 0}.ranges{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#514c68}.empty{padding:22px;text-align:center;color:var(--muted)}.toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap}label{font-size:14px}a{color:var(--violet)}
+</style>
+    <script src="./gas-client.js"></script>
+</head>
+<body>
+<main>
+<p class="eyebrow">LISTENING EXPERIMENT · ADMIN</p>
+<h1>実験結果の集計</h1>
+<p class="intro">実験IDごとに参加者の基本情報、評価、範囲選択、自由記述を確認できます。範囲CSVは全曲分または曲を指定して書き出せます。</p>
+<p id="loginStatus" class="status" role="status">結果を読み込んでいます…</p>
+<section id="resultsSection" hidden>
+<div class="toolbar" style="justify-content:space-between;margin-bottom:16px"><h2 style="margin:0">回答一覧</h2><div class="toolbar"><a href="./create.html">実験を作成</a><button class="button secondary" id="refreshButton" type="button">更新</button></div></div>
+<div class="summary" id="summary"></div>
+<section style="margin:16px 0 0;background:#faf9fd">
+<h2>範囲選択CSV</h2>
+<div class="toolbar">
+<button class="button" id="allCsv" type="button">全曲分をCSV出力</button>
+<div class="field"><label for="trackSelect">曲を選択</label><select id="trackSelect"><option value="">曲を選んでください</option></select></div>
+<button class="button secondary" id="trackCsv" type="button">この曲をCSV出力</button>
+</div>
+<p class="muted">1つの範囲を1行として出力します。同じ刺激に複数の範囲がある場合は、その数だけ行が増えます。</p>
+</section>
+<div id="attemptList"></div>
+</section>
+</main>
+<script>
+(()=>{
+const status=document.querySelector('#loginStatus'),resultsSection=document.querySelector('#resultsSection');
+const list=document.querySelector('#attemptList'),summary=document.querySelector('#summary'),trackSelect=document.querySelector('#trackSelect');
+let allAttempts=[];
+function esc(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function loadResults(){
+ status.textContent='結果を読み込んでいます…';
+ const data=await gasGet('results');
+ if(!data.ok)throw new Error(data.error||'読み込みに失敗しました。');
+ allAttempts=data.attempts||[];render(allAttempts);resultsSection.hidden=false;status.textContent='';
+}
+function render(attempts){
+ const complete=attempts.filter(a=>a.status==='completed'),pending=attempts.length-complete.length;
+ summary.innerHTML=`<div class="metric"><span>登録ID</span><strong>${attempts.length}</strong></div><div class="metric"><span>完了</span><strong>${complete.length}</strong></div><div class="metric"><span>進行中</span><strong>${pending}</strong></div>`;
+ const tracks=[...new Set(complete.flatMap(a=>(a.responses||[]).map(r=>r.stimulusId).filter(Boolean)))].sort();
+ trackSelect.innerHTML='<option value="">曲を選んでください</option>'+tracks.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
+ list.innerHTML=attempts.length?attempts.map(a=>{
+  const info=a.participantInfo||{},responses=a.responses||[];
+  return `<details class="attempt"><summary><strong>${esc(a.experimentId)}</strong><span class="badge ${a.status==='completed'?'':'pending'}">${a.status==='completed'?'完了':'進行中'}</span><span>${esc(a.createdAt||'')}</span><span>${esc(info.age??'—')}歳 · ${esc(info.gender||'未回答')}</span><span>${responses.length}刺激</span></summary><div class="detail">${responses.length?responses.map(r=>`<article class="stimulus"><h3>${esc(r.stimulusId)}</h3><p>人間らしさ：${esc(r.humanLikeness??'—')} / 7　 ·  確信度：${esc(r.confidence??'—')} / 7</p><p>${esc(r.freeResponse||'（自由記述なし）')}</p><p class="ranges">${(r.ranges||[]).length?`範囲：${r.ranges.map(x=>`${Number(x.start).toFixed(3)}–${Number(x.end).toFixed(3)}秒`).join('、')}`:'範囲選択なし'}</p></article>`).join(''):'<p class="muted">まだ回答が保存されていません。</p>'}</div></details>`
+ }).join(''):'<p class="empty">回答データはありません。</p>';
+}
+document.querySelector('#refreshButton').addEventListener('click',async()=>{try{await loadResults()}catch(error){status.textContent=error.message}});
+function downloadCsv(stimulus){const escape=value=>'"'+String(value??'').replaceAll('"','""')+'"';const rows=[['experiment_id','stimulus_id','range_number','start_seconds','end_seconds']];for(const attempt of allAttempts){for(const response of attempt.responses||[]){if(stimulus&&response.stimulusId!==stimulus)continue;(response.ranges||[]).forEach((span,index)=>rows.push([attempt.experimentId,response.stimulusId,index+1,span.start,span.end]))}}const csv='\ufeff'+rows.map(row=>row.map(escape).join(',')).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=stimulus?`ranges-${stimulus}.csv`:'ranges-all.csv';a.click();URL.revokeObjectURL(url)}
+document.querySelector('#allCsv').addEventListener('click',()=>downloadCsv(''));
+document.querySelector('#trackCsv').addEventListener('click',()=>{if(trackSelect.value)downloadCsv(trackSelect.value);else status.textContent='曲を選択してください。'});
+loadResults().catch(error=>{status.textContent=error.message});
+})();
+</script>
+</body>
+</html>
